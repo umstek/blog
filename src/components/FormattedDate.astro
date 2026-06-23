@@ -1,0 +1,15 @@
+---
+import dayjs from 'dayjs';
+
+interface Props {
+  date: Date;
+  /** dayjs/format token, e.g. "YYYY-MM-DD". */
+  format?: string;
+  class?: string;
+}
+
+const { date, format = 'YYYY-MM-DD', class: className } = Astro.props;
+const iso = date.toISOString();
+const label = dayjs(date).format(format);
+---
+<time datetime={iso} class={className}>{label}</time>

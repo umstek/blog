@@ -1,0 +1,25 @@
+---
+import Layout from '@/layouts/Layout.astro';
+import { getPublishedPosts } from '@/lib/posts';
+import { getUniqueTags } from '@/lib/tags';
+
+const posts = await getPublishedPosts();
+const tags = getUniqueTags(posts);
+---
+
+<Layout title="Tags">
+  <section class="space-y-6">
+    <h1 class="text-3xl font-bold tracking-tight">Tags</h1>
+    <div class="flex flex-wrap gap-2">
+      {tags.map(({ tag, count }) => (
+        <a
+          href={`/tags/${tag}`}
+          class="rounded-full border border-border px-3 py-1 text-sm no-underline hover:bg-bg-subtle"
+          style="color: var(--color-text-muted)"
+        >
+          #{tag} <span class="opacity-60">({count})</span>
+        </a>
+      ))}
+    </div>
+  </section>
+</Layout>

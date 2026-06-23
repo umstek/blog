@@ -1,4 +1,5 @@
-import { defineCollection, z } from 'astro:content';
+import { defineCollection } from 'astro:content';
+import { z } from 'zod/v4';
 import { glob } from 'astro/loaders';
 import { SITE } from '@/config';
 
@@ -26,7 +27,7 @@ const blog = defineCollection({
       // referenced only inside the body.
       ogImage: image().or(z.string()).optional(),
       // Optional: external canonical URL when a post is cross-posted.
-      canonicalURL: z.string().url().optional(),
+      canonicalURL: z.url().optional(),
       // Optional: group multi-part posts into a navigable series.
       series: z
         .object({

@@ -1,0 +1,141 @@
+---
+import { SITE } from '@/config';
+import '../styles/global.css';
+
+interface Props {
+  title?: string;
+  description?: string;
+  /** Path-relative or absolute OG image. Falls back to site default. */
+  image?: string;
+  /** External canonical URL for cross-posted content. */
+  canonicalURL?: string;
+}
+
+const {
+  title,
+  description = SITE.desc,
+  image,
+  canonicalURL,
+} = Astro.props;
+
+const pageTitle = title ? `${title} — ${SITE.title}` : SITE.title;
+// Resolve a full URL for OG/canonical from Astro's site config.
+const canonical = new URL(canonicalURL ?? Astro.url.pathname, Astro.site ?? SITE.website);
+const ogImage = image ? new URL(image, Astro.site ?? SITE.website) : undefined;
+---
+
+<!doctype html>
+<html lang={SITE.lang} dir={SITE.dir}>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta name="generator" content={Astro.generator} />
+
+    <title>{pageTitle}</title>
+    <meta name="description" content={description} />
+    <link rel="canonical" href={canonical} />
+
+    <!-- Open Graph -->
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content={title ?? SITE.title} />
+    <meta property="og:description" content={description} />
+    <meta property="og:url" content={canonical} />
+    <meta property="og:site_name" content={SITE.title} />
+    {ogImage && <meta property="og:image" content={ogImage} />}
+
+    <!-- Twitter -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content={title ?? SITE.title} />
+    <meta name="twitter:description" content={description} />
+    {ogImage && <meta name="twitter:image" content={ogImage} />}
+
+    <link
+      rel="alternate"
+      type="application/rss+xml"
+      title={SITE.title}
+      href={new URL('rss.xml', Astro.site ?? SITE.website)}
+    />
+
+    <!--
+      No-flash theme script. Runs synchronously in <head> before first paint
+      to apply the saved/system theme and (later) the saved font-size, so the
+      page never flashes the wrong theme. Kept inline and tiny on purpose.
+    -->
+    <script is:inline>
+      (function () {
+        try {
+          const saved = localStorage.getItem('theme');
+          const prefersDark = window.matchMedia(
+            '(prefers-color-scheme: dark)',
+          ).matches;
+          const theme = saved ?? (prefersDark ? 'dark' : 'light');
+          document.documentElement.dataset.theme = theme;
+        } catch {
+          /* localStorage may be unavailable (private mode); fall through to
+             the CSS default (light) rather than crashing the page. */
+        }
+      })();
+    </script>
+  </head>
+  <body>
+    <a href="#main" class="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-50 focus:rounded focus:bg-surface focus:px-4 focus:py-2 focus:shadow">
+      Skip to content
+    </a>
+
+    <header class="border-b border-border">
+      <nav class="mx-auto flex w-full max-w-3xl items-center justify-between px-4 py-4">
+        <a href="/" class="font-semibold no-underline hover:opacity-80" style="color: var(--color-text)">
+          {SITE.title}
+        </a>
+        <div class="flex items-center gap-4 text-sm">
+          <a href="/blog" class="no-underline hover:underline" style="color: var(--color-text-muted)">Posts</a>
+          <a href="/tags" class="no-underline hover:underline" style="color: var(--color-text-muted)">Tags</a>
+          <a href="/archives" class="no-underline hover:underline" style="color: var(--color-text-muted)">Archives</a>
+          <!-- Theme toggle placeholder; wired in the theme-toggle feature task -->
+          <button
+            id="theme-toggle"
+            type="button"
+            aria-label="Toggle dark mode"
+            class="rounded border border-border px-2 py-1 no-underline hover:bg-bg-subtle"
+            style="color: var(--color-text-muted)"
+          >
+            <span data-theme-label>☾</span>
+          </button>
+        </div>
+      </nav>
+    </header>
+
+    <main id="main" class="mx-auto w-full max-w-3xl flex-1 px-4 py-10">
+      <slot />
+    </main>
+
+    <footer class="border-t border-border">
+      <div class="mx-auto w-full max-w-3xl px-4 py-6 text-sm" style="color: var(--color-text-muted)">
+        <p>&copy; {new Date().getFullYear()} {SITE.author}. Content licensed CC-BY-SA-4.0.</p>
+      </div>
+    </footer>
+
+    <!-- Theme toggle behavior: swap light/dark and persist. -->
+    <script>
+      const root = document.documentElement;
+      const btn = document.getElementById('theme-toggle');
+      const label = document.querySelector('[data-theme-label]');
+      function syncLabel() {
+        if (!label) return;
+        label.textContent = root.dataset.theme === 'dark' ? '☀' : '☾';
+      }
+      btn?.addEventListener('click', () => {
+        const next = root.dataset.theme === 'dark' ? 'light' : 'dark';
+        root.dataset.theme = next;
+        try {
+          localStorage.setItem('theme', next);
+        } catch {
+          /* ignore persistence failures */
+        }
+        syncLabel();
+      });
+      syncLabel();
+    </script>
+  </body>
+</html>
