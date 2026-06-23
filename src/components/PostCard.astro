@@ -1,0 +1,55 @@
+---
+import { Image } from 'astro:assets';
+import type { Post } from '@/lib/posts';
+import { getPostURL, getReadingTime } from '@/lib/posts';
+import FormattedDate from './FormattedDate.astro';
+
+interface Props {
+  post: Post;
+}
+
+const { post } = Astro.props;
+const url = getPostURL(post);
+const minutes = getReadingTime(post.body ?? '');
+// Cover thumbnail: only when the cover is an optimized asset (not a string).
+const cover = post.data.ogImage;
+const coverIsAsset = cover != null && typeof cover !== 'string';
+---
+
+<article class="group space-y-2">
+  {coverIsAsset && (
+    <a href={url} class="block no-underline">
+      <Image
+        src={cover}
+        alt=""
+        width={400}
+        height={210}
+        class="rounded-lg border border-border object-cover"
+      />
+    </a>
+  )}
+  <h2 class="text-xl font-semibold leading-snug">
+    <a href={url} class="no-underline hover:underline" style="color: var(--color-text)">
+      {post.data.title}
+    </a>
+  </h2>
+  <div class="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm" style="color: var(--color-text-muted)">
+    <FormattedDate date={post.data.pubDatetime} />
+    <span aria-hidden="true">·</span>
+    <span>{minutes} min read</span>
+  </div>
+  <p class="line-clamp-2" style="color: var(--color-text-muted)">
+    {post.data.description}
+  </p>
+  <div class="flex flex-wrap gap-2 pt-1">
+    {post.data.tags.map((tag) => (
+      <a
+        href={`/tags/${tag}`}
+        class="rounded-full border border-border px-2.5 py-0.5 text-xs no-underline hover:bg-bg-subtle"
+        style="color: var(--color-text-muted)"
+      >
+        #{tag}
+      </a>
+    ))}
+  </div>
+</article>

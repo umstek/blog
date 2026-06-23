@@ -1,0 +1,43 @@
+---
+import Layout from '@/layouts/Layout.astro';
+import { getPublishedPosts, getPostURL } from '@/lib/posts';
+import FormattedDate from '@/components/FormattedDate.astro';
+
+const posts = await getPublishedPosts();
+
+// Group posts by year, descending.
+const byYear = new Map<number, typeof posts>();
+for (const post of posts) {
+  const year = post.data.pubDatetime.getUTCFullYear();
+  if (!byYear.has(year)) byYear.set(year, []);
+  byYear.get(year)!.push(post);
+}
+const years = [...byYear.keys()].sort((a, b) => b - a);
+---
+
+<Layout title="Archives">
+  <section class="space-y-10">
+    <h1 class="text-3xl font-bold tracking-tight">Archives</h1>
+    {years.map((year) => (
+      <div>
+        <h2 class="mb-3 text-sm font-semibold uppercase tracking-wide" style="color: var(--color-text-muted)">
+          {year} <span class="opacity-60">({byYear.get(year)!.length})</span>
+        </h2>
+        <ul class="space-y-2">
+          {byYear.get(year)!.map((post) => (
+            <li class="flex flex-wrap items-baseline gap-x-3 gap-y-1">
+              <FormattedDate
+                date={post.data.pubDatetime}
+                format="MMM D"
+                class="tabular-nums text-sm"
+              />
+              <a href={getPostURL(post)} class="no-underline hover:underline" style="color: var(--color-text)">
+                {post.data.title}
+              </a>
+            </li>
+          ))}
+        </ul>
+      </div>
+    ))}
+  </section>
+</Layout>

@@ -1,0 +1,79 @@
+---
+import { GISCUS_CONFIG, giscusEnabled } from '@/config.giscus';
+
+// Pass the config into the client via data attributes so the lazy-load
+// script can build the Giscus script tag without re-declaring values.
+const enabled = giscusEnabled();
+---
+
+{
+  enabled && (
+    <section class="mt-16 border-t border-border pt-8">
+      <h2 class="sr-only">Comments</h2>
+      {/*
+        Giscus script is injected into this container by the client script
+        below, which only runs when scrolled into view (IntersectionObserver).
+        This keeps the third-party iframe off the critical path and out of
+        the initial payload. Config values come from config.giscus.ts.
+      */}
+      <div
+        class="giscus"
+        data-giscus
+        data-repo={GISCUS_CONFIG.repo}
+        data-repo-id={GISCUS_CONFIG.repoId}
+        data-category={GISCUS_CONFIG.category}
+        data-category-id={GISCUS_CONFIG.categoryId}
+        data-theme={GISCUS_CONFIG.theme}
+        data-reactions={GISCUS_CONFIG.reactionsEnabled ? '1' : '0'}
+        data-mapping={GISCUS_CONFIG.mapping}
+      />
+    </section>
+  )
+}
+
+{
+  enabled && (
+    <script>
+      // Lazy-load: only inject the Giscus iframe when the comments section
+      // scrolls near the viewport. Falls back to immediate load if
+      // IntersectionObserver is unavailable.
+      const container = document.querySelector<HTMLElement>('[data-giscus]');
+      if (container) {
+        const ds = container.dataset;
+        const inject = () => {
+          const script = document.createElement('script');
+          script.src = 'https://giscus.app/client.js';
+          script.async = true;
+          script.crossOrigin = 'anonymous';
+          script.setAttribute('data-repo', ds.repo ?? '');
+          script.setAttribute('data-repo-id', ds.repoId ?? '');
+          script.setAttribute('data-category', ds.category ?? '');
+          script.setAttribute('data-category-id', ds.categoryId ?? '');
+          script.setAttribute('data-mapping', ds.mapping ?? 'pathname');
+          script.setAttribute('data-reactions-enabled', ds.reactions ?? '1');
+          script.setAttribute('data-emit-metadata', '0');
+          script.setAttribute('data-input-position', 'top');
+          script.setAttribute('data-theme', ds.theme ?? 'light');
+          script.setAttribute('data-lang', 'en');
+          script.setAttribute('data-loading', 'lazy');
+          container.appendChild(script);
+        };
+
+        if ('IntersectionObserver' in window) {
+          const io = new IntersectionObserver(
+            (entries) => {
+              if (entries.some((e) => e.isIntersecting)) {
+                io.disconnect();
+                inject();
+              }
+            },
+            { rootMargin: '200px' },
+          );
+          io.observe(container);
+        } else {
+          inject();
+        }
+      }
+    </script>
+  )
+}

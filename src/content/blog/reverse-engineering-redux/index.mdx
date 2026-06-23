@@ -1,0 +1,427 @@
+---
+title: Reverse engineering redux, TDD, with and without RxJS
+description: Analyze the functionality of redux by trying to reverse engineer it using RxJS and a test driven approach.
+draftDatetime: 2021-02-15T09:30:00.000Z
+pubDatetime: 2021-03-07T10:30:00.000Z
+ogImage: "./cover.webp"
+tags:
+  - reverse-engineering
+  - redux
+  - tdd
+  - rx
+  - rxjs
+featured: true
+---
+
+<div class="alert info">
+
+You will understand this article better if you already:
+
+- have worked with redux
+- have a basic understanding of functional (reactive) programming
+- have used a testing library/framework in some language
+
+</div>
+
+I didn't use redux for almost 2 years and suddenly had to work with it again. When I was trying this noob-style query, the 3rd suggestion was "why is redux so complicated". I was disappointed; Is it really? I stopped looking for the reasons why redux was so popular and instead, started writing this post. Let's see if we can figure out what is so complicated about redux and how hard it is to implement redux from scratch.
+
+The example in redux readme summarizes everything redux does. You don't need to read this code now. I didn't either.
+
+```jsx
+import { createStore } from "redux";
+
+/**
+ * This is a reducer - a function that takes a current state value and an
+ * action object describing "what happened", and returns a new state value.
+ * A reducer's function signature is: (state, action) => newState
+ *
+ * The Redux state should contain only plain JS objects, arrays, and primitives.
+ * The root state value is usually an object.  It's important that you should
+ * not mutate the state object, but return a new object if the state changes.
+ *
+ * You can use any conditional logic you want in a reducer. In this example,
+ * we use a switch statement, but it's not required.
+ */
+function counterReducer(state = { value: 0 }, action) {
+  switch (action.type) {
+    case "counter/incremented":
+      return { value: state.value + 1 };
+    case "counter/decremented":
+      return { value: state.value - 1 };
+    default:
+      return state;
+  }
+}
+
+// Create a Redux store holding the state of your app.
+// Its API is { subscribe, dispatch, getState }.
+let store = createStore(counterReducer);
+
+// You can use subscribe() to update the UI in response to state changes.
+// Normally you'd use a view binding library (e.g. React Redux) rather than subscribe() directly.
+// There may be additional use cases where it's helpful to subscribe as well.
+
+store.subscribe(() => console.log(store.getState()));
+
+// The only way to mutate the internal state is to dispatch an action.
+// The actions can be serialized, logged or stored and later replayed.
+store.dispatch({ type: "counter/incremented" });
+// {value: 1}
+store.dispatch({ type: "counter/incremented" });
+// {value: 2}
+store.dispatch({ type: "counter/decremented" });
+// {value: 1}
+```
+
+Redux keeps the application state in a single object (inside `store`). It also wants you to _describe_ your events (`action`s) instead of _doing_ things when they happen. You have to write all of your state changes in a single function (`reducer`) which derives the new state using the old state and the event data. When you call `store.dispatch(action)`, the `reducer` function gets called (by redux). You can get the state at any moment by calling `store.getState()`. You can also call `store.subscribe(callback)` to make redux notify you whenever a state change happens. This is most of what redux does. (We will talk about middleware and enhancers later.) The [diagram](https://redux.js.org/tutorials/fundamentals/part-1-overview#data-flow) in official docs is lovely.
+
+Let's reverse engineer this using the code in the above example. So, the idea is, the above code should work and yield the same results when using `redux` and `re-redux` which we are going to create.
+
+> What I cannot create, I do not understand. -- Richard Feynman
+
+Create folder re-redux.
+
+Run `npm init -y` so it won't ask you questions.
+
+```bash
+npm i -D typescript ts-node jest ts-jest
+```
+
+I don't know about you but I'm a typescript fan.
+
+```bash
+npm i rxjs redux
+```
+
+Why `rxjs`? We'll see soon.
+
+```bash
+npx tsc --init
+npx ts-jest config:init
+```
+
+```json
+"scripts": {
+    "test": "jest"
+  },
+```
+
+Let's change the above readme example to a basic test with jest.
+
+```tsx
+import { Action, createStore, Store } from "redux";
+
+function counterReducer(state = { value: 0 }, action: Action) {
+  switch (action.type) {
+    case "counter/incremented":
+      return { value: state.value + 1 };
+    case "counter/decremented":
+      return { value: state.value - 1 };
+    default:
+      return state;
+  }
+}
+
+describe("redux basics", () => {
+  let store: Store<{ value: number }, Action>;
+
+  beforeEach(() => {
+    store = createStore(counterReducer);
+  });
+
+  test("dispatch incremented", () => {
+    store.dispatch({ type: "counter/incremented" });
+    const state = store.getState();
+    expect(state).toEqual({ value: 1 });
+  });
+
+  test("dispatch decremented", () => {
+    store.dispatch({ type: "counter/decremented" });
+    const state = store.getState();
+    expect(state).toEqual({ value: -1 });
+  });
+});
+```
+
+And now run `npm test`. The test should pass.
+
+Create a duplicate from `src/redux.spec.ts` and rename it to `src/re-redux.spec.ts`. Here we will test our library. Remove the first line (import) and save the file.
+
+Create a `src/re-redux.ts` file. We will write our library here.
+
+We start from creating a store with `createStore` function:
+
+```tsx
+function createStore(reducer) {
+  return {};
+}
+```
+
+We used `dispatch` and `getState` functions in the redux example:
+
+```tsx
+export function createStore(reducer) {
+  // [!code highlight]
+  let state;
+
+  return {
+    // [!code highlight:4]
+    dispatch: action => {
+      state = reducer(state, action);
+    },
+    getState: () => state,
+  };
+}
+```
+
+> When you call `store.dispatch(action)`, the `reducer` function gets called (by redux) [with the current state and the `action` you have provided]. -- me, earlier in the article.
+
+> You can get the state at any moment by calling `store.getState()`.
+
+Import `createStore` function from the test script. Now, try to run the test: `npm test`.
+
+Test fails but it's mostly because of typescript definitions. Let's add them.
+
+```tsx
+export interface Action<T = any> {
+  type: T;
+}
+
+export interface Store<S = any, A extends Action<any> = Action<any>> {
+  getState: () => S;
+  dispatch: (action: A) => void;
+}
+```
+
+Import `Action` and `Store` as well, from the test script. Now, both of the test scripts look similar with the exception of `./re-redux` instead of `redux` in `import { Action, createStore, Store } from 'redux';`. The test still fails. Let's write the minimum code needed to make the test pass.
+
+```tsx
+// [!code highlight:2]
+export function createStore<S, A extends Action<any> = Action<any>>(
+  reducer: (state: S, action: A) => S
+) {
+  // [!code highlight]
+  let state: S;
+
+  return {
+    // [!code highlight]
+    dispatch: (action: A) => {
+      state = reducer(state, action);
+    },
+    getState: () => state,
+  };
+}
+```
+
+The test passes! My code might be a little inaccurate but it's normal in clean room reverse engineering. Have we implemented redux? No, not yet. But what is interesting is that the API is accurate up-to now, and we did it in 20 lines even with types.
+
+> The term [clean room design] implies that the design team works in an environment that is "clean" or demonstrably uncontaminated by any knowledge of the proprietary techniques used by the competitor. -- Wikipedia
+
+We don't have a problem with copyrights here; we're just trying to learn, the hard way.
+
+We missed a test case. What about the initial state? Let's add that to both test scripts.
+
+```tsx
+test("initial state", () => {
+  const state = store.getState();
+  expect(state).toEqual({ value: 0 });
+});
+```
+
+```
+FAIL  src/re-redux.spec.ts
+● redux basics › test initial state
+
+  expect(received).toEqual(expected) // deep equality
+
+  Expected: {"value": 0}
+  Received: undefined
+```
+
+Unsurprisingly, it fails. Let's add the code.
+
+We just need to call the reducer once when the store is created, to collect the initial state from the reducer. There is no specific `action` we can provide. So let's create a dummy action with the type `'@@INIT'` (this breaks the user provided type `T` for `Action` but we don't care). You have seen this in redux log, maybe?
+
+```tsx
+export interface Action<T = any> {
+  type: T;
+}
+
+export interface Store<S = any, A extends Action<any> = Action<any>> {
+  getState: () => S;
+  dispatch: (action: A) => void;
+}
+
+export function createStore<
+  S = any,
+  A extends Action = Action<any> & { [x: string]: any },
+>(reducer: (state: S | undefined, action: A) => S) {
+  // [!code highlight]
+  let state: S = reducer(undefined, { type: "@@INIT" } as A);
+
+  return {
+    dispatch: (action: A) => {
+      state = reducer(state, action);
+    },
+    getState: () => state,
+  };
+}
+```
+
+This is the result. I cleaned up the typings as well. It's working. One more thing we need. What about the `subscribe` function? Let's extend our tests.
+
+```tsx
+describe("redux basics", () => {
+  // ... omitted lines for clarity
+
+  test("subscription", () => {
+    const mockF1 = jest.fn();
+    const mockF2 = jest.fn();
+
+    const unsubscribe1 = store.subscribe(mockF1);
+    expect(mockF1).not.toHaveBeenCalled();
+
+    store.dispatch({ type: "counter/incremented" });
+    expect(mockF1).toHaveBeenCalledTimes(1);
+    expect(mockF2).not.toHaveBeenCalled();
+
+    const unsubscribe2 = store.subscribe(mockF2);
+    store.dispatch({ type: "counter/decremented" });
+    expect(mockF1).toHaveBeenCalledTimes(2);
+    expect(mockF2).toHaveBeenCalledTimes(1);
+
+    unsubscribe1();
+    store.dispatch({ type: "counter/incremented" });
+    expect(mockF1).toHaveBeenCalledTimes(2); // mockF1 shouldn't be called.
+    expect(mockF2).toHaveBeenCalledTimes(2);
+  });
+});
+```
+
+I added some jest mock functions `mockF1` and `mockF2`. This is how you would track whether a function is called. I want to find out whether the subscribed function is called or not, for the initial value with `expect(mockF).not.toHaveBeenCalled();`. In redux, it isn't. Maybe it is called but we create the store before subscribing to it, so the event is lost. We don't actually need the initial state since we can call `getState()` to get it. We track whether the subscribed function is called for each state update too.
+
+We have tested subscription with multiple functions and also the unsubscribe function.
+
+Let's extend types:
+
+```tsx
+export interface Store<S = any, A extends Action<any> = Action<any>> {
+  // ...
+  subscribe: (listener: () => void) => () => void;
+}
+```
+
+What is returned here is the unsubscribe function.
+
+And let's extend the `createStore` function.
+
+```tsx
+export function createStore<
+  S = any,
+  A extends Action = Action<any> & { [x: string]: any },
+>(reducer: (state: S | undefined, action: A) => S) {
+  let state: S = reducer(undefined, { type: "@@INIT" } as A);
+  // [!code highlight]
+  let listeners: (() => void)[] = [];
+
+  return {
+    dispatch: (action: A) => {
+      state = reducer(state, action);
+      // [!code highlight]
+      listeners.forEach(f => f());
+    },
+    getState: () => state,
+    // [!code highlight:5]
+    subscribe: (listener: () => void) => {
+      listeners.push(listener);
+      return () => {
+        listeners = listeners.filter(f => f !== listener);
+      };
+    },
+  };
+}
+```
+
+I added the _textbook_ producer-consumer code here. No need to reinvent things.
+
+So what's the fuss about RxJS? Redux [lists RxJS](https://redux.js.org/understanding/history-and-design/prior-art#rxjs) in prior art section in its docs. In fact, Redux has already been [re-implemented](https://github.com/jas-chen/rx-redux) with RxJS as a POC around 5 years ago!
+
+> The question is: do you really need Redux if you already use Rx? Maybe not. It's not hard to re-implement Redux in Rx. Some say it's a two-liner using Rx .scan() method. It may very well be! -- Redux docs
+
+Let's implement a compatible `createStore` function with RxJS. Surprisingly, my implementation came out to be hacky and clunky; even longer than our basic solution. Any suggestions for improvements are welcome, but remember that we should be able to pass our test cases.
+
+```tsx
+export function createStore<
+  S = any,
+  A extends Action = Action<any> & { [x: string]: any },
+>(reducer: (state: S | undefined, action: A) => S) {
+  // It is common practice to suffix observable stream variables with '$'.
+  const subject$ = new Subject<A>();
+  const state$ = subject$.pipe(
+    startWith({ type: "@@INIT" } as A),
+    scan(reducer, undefined),
+    share()
+  );
+  let state: S | undefined;
+  state$.subscribe(s => (state = s));
+
+  return {
+    dispatch: subject$.next.bind(subject$),
+    getState: () => state as S,
+    subscribe: (listener: () => void) => {
+      const subscription = state$.subscribe(listener);
+      return subscription.unsubscribe.bind(subscription);
+    },
+  };
+}
+```
+
+(Sidetrack: [Why do we need `function.bind(object)`?](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_objects/Function/bind#creating_a_bound_function))
+
+The reason for this is the architectural differences between how redux and RxJS are written. RxJS (Functional Reactive Programming library for JavaScript) is a whole new paradigm while redux solves a specific problem.
+
+Briefly, functional reactive programming is like functional programming for **temporal** collections (i.e.: stream/time series/...). For example, a JavaScript array is a **spatial** collection; you have all the values _in hand_. When you call `reduce`, you go through the array one value at a time, keeping an aggregated value in memory (e.g.: sum). At the end of the array, you get this value as the output. The [RxJS](https://rxjs.dev/guide/overview) version of the `reduce` operator _receives_ one value at a time from wherever the value originates (e.g: a periodic data fetch), keeps an aggregated value in memory, and when the stream _completes_, returns it. The stream might never complete, unlike an array. And just like an array, it might be empty. The `scan` operator is similar to `reduce` operator except that after each value it emits the aggregated result.
+
+If we were to take design decisions that would be in par with RxJS, we would not create a `getState` function; rather, we would return the Observable itself so `observable.subscribe(doSomething)` is possible. `getState` is used to _pull_ data whereas an observable would _push_ data to the subscriber. (Of course, redux can do this with `store.subscribe(() => doSomething(store.getState()))`.) This would save us two lines.
+
+```tsx
+let state: S | undefined;
+state$.subscribe(s => (state = s));
+```
+
+And in redux, we set the initial state as the default value to the first parameter of the reducer function. But usually in functional programming, this is provided as the `seed` value to the `scan` function. We will see why this decision was important for redux in terms of composability when discussing `combineReducers` (future). Anyway, if we went with the functional way, we will save some more lines; we wouldn't need `startWith` (i.e.: dispatching a dummy action to collect the default state from the reducer).
+
+```tsx
+// ...
+const state$ = subject$.pipe(scan(reducer, INITIAL_STATE), share());
+// ...
+```
+
+Well, actually, we wouldn't need any of the boilerplate that is needed to create the store; we can remove the function `createStore` itself and just use RxJS like so,
+
+```ts
+const subject$ = new Subject<A>();
+const state$ = subject$.pipe(scan(reducer, INITIAL_STATE), share());
+```
+
+is all we need. Let me quote the redux docs again.
+
+> Some say it's a two-liner using Rx .scan() method. It may very well be!
+
+Of --- course it is. 😆
+
+Just use `subject$.next(action)` to dispatch and `state$.subscribe(callback)` to subscribe to state. We will need some boilerplate anyway when we implement functionality similar to `combineReducers`, middleware, enhancers and the functionality from `react-redux`. But it might still retain the two-lines status anyway 😅.
+
+However, if we were to use RxJS, we wouldn't be writing redux on top of it. I believe that we wouldn't even need `redux-thunk`, `redux-saga` or any other complicated middleware to handle side effects with the power RxJS offers.
+
+You don't need redux; you just need the discipline to keep the data flow unidirectional.
+
+Points I wanted to emphasize:
+
+- Switch to TypeScript
+- Jest is good
+- Try to do it without redux
+- Use RxJS often
+- Unidirectional Data Flow
+
+P.S.: The complete code is [here](https://github.com/umstek/re-redux).

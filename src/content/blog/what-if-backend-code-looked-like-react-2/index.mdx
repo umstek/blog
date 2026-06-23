@@ -1,0 +1,270 @@
+---
+title: What if backend code looked like React? - Part II/JSX
+description: Making JSX work with Deno
+draftDatetime: 2022-09-19T16:30:00.000Z
+pubDatetime: 2022-09-18T03:30:00.000Z
+ogImage: "./cover.webp"
+series:
+  name: "What if backend code looked like React?"
+  order: 2
+tags:
+  - jsx
+  - react
+  - nodejs
+  - deno
+  - server
+---
+
+<div class="alert info">
+
+In the last post, we set up deno and wrote a pretty simple web server. In the this post, we will configure deno so we could write HTTP Responses with JSX.
+
+</div>
+
+## Adding JSX Support 🤨
+
+> Deno has built-in support for JSX in both .jsx files and .tsx files. JSX in Deno can be handy for server-side rendering or generating code for consumption in a browser.
+
+Now you know why the `.tsx` extension works. Deno manual also has a section on [how to configure JSX](https://deno.land/manual@v1.25.3/jsx_dom/jsx). But first, let me introduce you to the [Deno config file](https://deno.land/manual@v1.25.3/getting_started/configuration_file).
+
+Deno config file can be named `deno.json` or `deno.jsonc`. Using a config file is optional, and most of the stuff "just works". However, we need it to configure our custom JSX support. At first glance, it looks like the Deno config file is the same as the `.tsconfig` file. However, they are different. Still, there are many common fields in the `compilerOptions` section.
+
+The default JSX configuration is the below, if you don't provide one.
+
+```json
+  "compilerOptions": {
+    "jsx": "react",
+    "jsxFactory": "React.createElement",
+    "jsxFragmentFactory": "React.Fragment"
+  }
+```
+
+What does it mean? `"jsx": "react"` means the JSX will be converted into `React.createElement` calls, or, whatever specified as `jsxFactory`. This is how Preact would convert them to `preact.h` instead of `React.createElement`. And `jsxFragmentFactory` calls will be used whenever you use react `<Fragment>`s or `<>...</>` blocks.
+
+If you didn't, now you know. You can see more details in [TypeScript docs](https://www.typescriptlang.org/tsconfig#jsx).
+
+The fields that we don't configure are left alone, so let's only configure the JSX-related fields.
+
+```json
+{
+  "compilerOptions": {
+    "jsx": "react",
+    "jsxFactory": "b",
+    "jsxFragmentFactory": "b"
+  }
+}
+```
+
+`b` is the JSX Factory function I'm going to write. I'll use the same for JSX Fragment Factory for now.
+
+Let's assume there was a component in deno.tsx that's called `json`. It would stringify anything you pass it as children. It would also accept a replacer and the indentation. So we can write,
+
+```tsx
+<json space={2}>{hello: 'world'}</json>
+```
+
+and get the output
+
+```json
+{
+  "hello": "world"
+}
+```
+
+Let's edit our server.
+
+```tsx
+import { serve } from "https://deno.land/std@0.156.0/http/server.ts";
+
+const port = 8080;
+
+const handler = (request: Request): Response => {
+  const body = // [!code highlight]
+    (
+      <json space={2}>
+        {`Your user-agent is:\n\n${request.headers.get("user-agent") ?? "Unknown"}`}{" "}
+        // [!code highlight]
+      </json>
+    );
+
+  return new Response(body, { status: 200 });
+};
+
+console.log(`HTTP webserver running. Access it at: http://localhost:8080/`);
+await serve(handler, { port });
+```
+
+All you'll get is a red wiggly underline and an error at `json`;
+
+```txt
+JSX element implicitly has type 'any' because no interface 'JSX.IntrinsicElements' exists.deno-ts(7026)
+
+Cannot find name 'b'.deno-ts(2304)
+```
+
+Create a new file `renderer/jsx-runtime/index.ts` with the below content.
+
+```ts
+export function b(...args: unknown[]) {
+  return JSON.stringify(args);
+}
+```
+
+The thing is, we don't still know what arguments we'll get from the runtime when it converts a JSX to a call to `b` call. We can test it this way, or we could google it.
+
+To run, we need to import `b` into the file where the server is defined, just like React components (older versions) need to have `React` in scope.
+
+So add an import to `b` on the second line of `index.tsx`. Remember, you don't call it manually; it just sits there.
+
+```tsx
+import { serve } from "https://deno.land/std@0.156.0/http/server.ts";
+import { b } from "./renderer/jsx-runtime/index.ts"; // [!code highlight]
+
+const port = 8080;
+
+// ...
+```
+
+One error disappears; but it still complains about missing types. You can actually run and see the output on a browser now; we'll come back to fix the types later.
+
+```json
+[
+  "json",
+  {
+    "space": 2
+  },
+  "Your user-agent is:\n\nMozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/105.0.0.0 Safari/537.36"
+]
+```
+
+So. Apparently, there are 3 arguments. First one is the tag name, second one is an object containing props/attributes, and the third one is children passed. Let's use this information to rewrite the function.
+
+```ts
+export function b(tag: string, props: { [x: string]: any }, children: unknown) {
+  switch (tag) {
+    case "json":
+      return JSON.stringify(children, props.replacer, props.space);
+    default:
+      return "";
+  }
+}
+```
+
+Now the output becomes:
+
+```json
+"Your user-agent is:\n\nMozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/105.0.0.0 Safari/537.36"
+```
+
+It would be clearer if we used an object in `index.tsx`.
+
+```tsx
+// ...
+<json space={2}>{{ hello: "world" + 1 }}</json>
+// ...
+```
+
+The outer curly braces allow writing executable TS code inside TSX markup. The inner braces just specify the object. Let's run this now.
+
+```json
+{
+  "hello": "world1"
+}
+```
+
+It really works; deno knows to execute the code inside first and then call `b`. Sigh. If we used `tsc` I could've shown you the transpiler output. However, it isn't hard; you should try.
+
+Let's get rid of that wiggly underline now. Create a `types.d.ts` file in the project root. To be honest, I opened one of my old react projects and `Ctrl+Click`ed on a `<div>`. vscode navigated me to React's type definitions.
+
+All we need to add is:
+
+```ts
+declare global {
+  namespace JSX {
+    interface IntrinsicElements {
+      json: {
+        replacer?: ((this: any, key: string, value: any) => any) | undefined;
+        space?: string | number | undefined;
+        children?: any;
+      };
+    }
+  }
+}
+
+export {};
+//   ^ You need this due to a limitation in Deno
+```
+
+I did this by looking at the type hints of `JSON.stringify` function, because we are just mapping one function call to another.
+
+We also have to edit the `deno.jsonc` and add a line below `jsxFragmentFactory`.
+
+```json
+{
+  "compilerOptions": {
+    "jsx": "react",
+    "jsxFactory": "b",
+    "jsxFragmentFactory": "b",
+    "types": ["./types"] // [!code highlight]
+  }
+}
+```
+
+Due to the way deno works, only this fixes the error. If you specified a folder, or extensions, it wouldn't work.
+
+Let's add one more branch to the switch in `b`,
+
+```ts
+// ...
+    case 'response':
+      return new Response(
+        children as BodyInit | null | undefined,
+        props as ResponseInit | undefined,
+      );
+// ...
+```
+
+and types to `types.d.ts`.
+
+```ts
+// ...
+      response: {
+        children?: BodyInit | null | undefined;
+      } & ResponseInit;
+// ...
+```
+
+Let's also edit the `index.tsx` file.
+
+```tsx
+import { serve } from "https://deno.land/std@0.156.0/http/server.ts";
+import { b } from "./renderer/jsx-runtime/index.ts";
+
+const port = 8080;
+
+const handler = (request: Request): Response => {
+  return (
+    // [!code highlight]
+    <response status={200}>
+      <json space={2}>{{ hello: "world" + 1 }}</json>
+    </response> // [!code highlight]
+  );
+};
+
+console.log(`HTTP webserver running. Access it at: http://localhost:8080/`);
+await serve(handler, { port });
+```
+
+This corresponds to an HTTP Response.
+
+Run it. And it should print the same response as the last time.
+
+We have only created two built-in react elements (note how I have specified the tags in lowercase), like `div` and `span`. This knowledge is enough to take us further. We can create an old-school template library having react syntax, or even a react clone. We only need a typescript compiler/interpreter.
+
+If I don't procrastinate, I'll write code for a part III, which will allow creating custom react components, maybe hooks, and routing.
+
+...
+
+P.S.:
+
+I/we/you means the same thing throughout the article(s). I have been inconsistent.

@@ -1,0 +1,250 @@
+---
+import { SITE } from '@/config';
+import { getImagePath } from 'astro-takumi';
+import { readFileSync } from 'node:fs';
+import '../styles/global.css';
+// Read KaTeX CSS at build time so we can inline it only on pages that
+// actually render math. Inlined (rather than <link>) to keep it a single
+// self-contained file with no extra request; ~23KB, gzip ~6KB.
+// CWD-relative is correct here: Astro always runs the build from the
+// project root, and import.meta.url is unreliable during prerender (it
+// points at a copied chunk path, not the source).
+const katexCss = readFileSync('node_modules/katex/dist/katex.min.css', 'utf8');
+
+interface Props {
+  title?: string;
+  description?: string;
+  /** External canonical URL for cross-posted content. */
+  canonicalURL?: string;
+  /** JSON-LD object to emit as structured data in <head>. */
+  jsonLd?: Record<string, unknown>;
+  /** Load KaTeX CSS. Off by default; post pages enable it only when the
+      post body actually contains math. */
+  math?: boolean;
+}
+
+const { title, description = SITE.desc, canonicalURL, jsonLd, math = false } = Astro.props;
+
+const pageTitle = title ? `${title} — ${SITE.title}` : SITE.title;
+// Resolve a full URL for OG/canonical from Astro's site config.
+const canonical = new URL(canonicalURL ?? Astro.url.pathname, Astro.site ?? SITE.website);
+// OG image is generated per-page at build time by astro-takumi. Format must
+// match the integration config (webp here).
+const ogImage = new URL(
+  getImagePath({ url: Astro.url, site: Astro.site ?? new URL(SITE.website), format: 'webp' }),
+  Astro.site ?? SITE.website,
+);
+// Pre-serialize JSON-LD once; emitted via set:html to avoid double-escaping.
+const jsonLdString = jsonLd ? JSON.stringify(jsonLd) : undefined;
+---
+
+<!doctype html>
+<html lang={SITE.lang} dir={SITE.dir}>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta name="generator" content={Astro.generator} />
+
+    <title>{pageTitle}</title>
+    <meta name="description" content={description} />
+    <link rel="canonical" href={canonical} />
+
+    <!-- Open Graph -->
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content={title ?? SITE.title} />
+    <meta property="og:description" content={description} />
+    <meta property="og:url" content={canonical} />
+    <meta property="og:site_name" content={SITE.title} />
+    <meta property="og:image" content={ogImage} />
+
+    <!-- Twitter -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content={title ?? SITE.title} />
+    <meta name="twitter:description" content={description} />
+    <meta name="twitter:image" content={ogImage} />
+
+    <!-- Structured data (JSON-LD). Per-page; the post detail page passes
+         a BlogPosting object, others pass a WebSite object. -->
+    {jsonLdString && (
+      <script is:inline type="application/ld+json" set:html={jsonLdString} />
+    )}
+
+    <!-- KaTeX CSS, only on pages whose content contains math. -->
+    {math && <style is:inline set:html={katexCss} />}
+
+    <link
+      rel="alternate"
+      type="application/rss+xml"
+      title={SITE.title}
+      href={new URL('rss.xml', Astro.site ?? SITE.website)}
+    />
+
+    <!--
+      No-flash script. Runs synchronously in <head> before first paint to
+      apply the saved theme mode + font family, so the page never flashes.
+      Theme mode is one of light/dark/system; "system" resolves against
+      prefers-color-scheme. Font is one of serif/sans/mono/dyslexic.
+    -->
+    <script is:inline>
+      (function () {
+        try {
+          // Theme: stored mode (light/dark/system), default system.
+          const mode = localStorage.getItem('theme') || 'system';
+          const systemDark = window.matchMedia(
+            '(prefers-color-scheme: dark)',
+          ).matches;
+          const resolved =
+            mode === 'system' ? (systemDark ? 'dark' : 'light') : mode;
+          const el = document.documentElement;
+          el.dataset.theme = resolved;
+          el.dataset.themeMode = mode;
+
+          // Font family: stored value, default serif.
+          const font = localStorage.getItem('font');
+          if (font) el.dataset.font = font;
+        } catch {
+          /* localStorage may be unavailable (private mode); fall through to
+             the CSS defaults rather than crashing the page. */
+        }
+      })();
+    </script>
+  </head>
+  <body>
+    <a href="#main" class="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-50 focus:rounded focus:bg-surface focus:px-4 focus:py-2 focus:shadow">
+      Skip to content
+    </a>
+
+    <header class="border-b border-border">
+      <nav class="mx-auto flex w-full max-w-3xl items-center justify-between px-4 py-4">
+        <a href="/" class="font-semibold no-underline hover:opacity-80" style="color: var(--color-text)">
+          {SITE.title}
+        </a>
+        <div class="flex items-center gap-4 text-sm">
+          <a href="/blog" class="no-underline hover:underline" style="color: var(--color-text-muted)">Posts</a>
+          <a href="/tags" class="no-underline hover:underline" style="color: var(--color-text-muted)">Tags</a>
+          <a href="/archives" class="no-underline hover:underline" style="color: var(--color-text-muted)">Archives</a>
+          <a href="/search" class="no-underline hover:underline" style="color: var(--color-text-muted)">Search</a>
+
+          <!-- Theme toggle: 3-state light/dark/system. Three icons stacked;
+               the active one scales in, others scale out, via the behavior script. -->
+          <button
+            id="theme-toggle"
+            type="button"
+            aria-label="Theme"
+            class="relative h-6 w-6 rounded border border-border hover:bg-bg-subtle"
+            style="color: var(--color-text-muted)"
+          >
+            <svg class="theme-icon theme-icon-light absolute inset-0 m-auto h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg>
+            <svg class="theme-icon theme-icon-dark absolute inset-0 m-auto h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+            <svg class="theme-icon theme-icon-system absolute inset-0 m-auto h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>
+          </button>
+
+          <!-- Font toggle: cycles serif/sans/mono/dyslexic; label shows first letter. -->
+          <button
+            id="font-toggle"
+            type="button"
+            aria-label="Font family"
+            class="h-6 w-6 rounded border border-border text-xs font-semibold hover:bg-bg-subtle"
+            style="color: var(--color-text-muted)"
+          >
+            <span data-font-label>S</span>
+          </button>
+        </div>
+      </nav>
+    </header>
+
+    <main id="main" class="mx-auto w-full max-w-3xl flex-1 px-6 py-16">
+      <slot />
+    </main>
+
+    <footer class="border-t border-border">
+      <div class="mx-auto w-full max-w-3xl px-6 py-8 text-sm" style="color: var(--color-text-muted)">
+        <p>&copy; {new Date().getFullYear()} {SITE.author}. Content licensed CC-BY-SA-4.0.</p>
+      </div>
+    </footer>
+
+    <!-- Theme toggle: 3-state cycle light → dark → system. -->
+    <script>
+      const root = document.documentElement;
+      const themeBtn = document.getElementById('theme-toggle');
+
+      function systemDark() {
+        return window.matchMedia('(prefers-color-scheme: dark)').matches;
+      }
+      function mode() {
+        return root.dataset.themeMode || 'system';
+      }
+      function applyTheme(m: string) {
+        const resolved = m === 'system' ? (systemDark() ? 'dark' : 'light') : m;
+        root.dataset.theme = resolved;
+        root.dataset.themeMode = m;
+        // Show only the icon matching the current mode.
+        for (const el of document.querySelectorAll<HTMLElement>('.theme-icon')) {
+          el.style.opacity = el.classList.contains(`theme-icon-${m}`) ? '1' : '0';
+        }
+        themeBtn?.setAttribute('aria-label', `${m} theme`);
+      }
+      themeBtn?.addEventListener('click', () => {
+        const order = ['light', 'dark', 'system'];
+        const next = order[(order.indexOf(mode()) + 1) % order.length];
+        try { localStorage.setItem('theme', next); } catch {}
+        applyTheme(next);
+      });
+      applyTheme(mode());
+      // If in system mode, follow OS changes live.
+      window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {
+        if (mode() === 'system') applyTheme('system');
+      });
+    </script>
+
+    <script>
+      const root = document.documentElement;
+      const fontBtn = document.getElementById('font-toggle');
+      const fontLabel = document.querySelector<HTMLElement>('[data-font-label]');
+      const FONTS = ['serif', 'sans', 'mono', 'dyslexic'] as const;
+      type FontKey = typeof FONTS[number];
+      const LABELS: Record<FontKey, string> = { serif: 'S', sans: 'A', mono: 'M', dyslexic: 'D' };
+      function currentFont(): string {
+        return root.dataset.font || 'serif';
+      }
+      function applyFont(f: FontKey) {
+        root.dataset.font = f;
+        if (fontLabel) fontLabel.textContent = LABELS[f];
+        fontBtn?.setAttribute('aria-label', `${f} font`);
+      }
+      fontBtn?.addEventListener('click', () => {
+        const idx = FONTS.indexOf(currentFont() as FontKey);
+        const next = FONTS[(idx + 1) % FONTS.length];
+        try { localStorage.setItem('font', next); } catch {}
+        applyFont(next);
+      });
+      applyFont(currentFont() as FontKey);
+    </script>
+
+    <!-- Scroll-to-top button: fixed, appears after scrolling down a viewport. -->
+    <button
+      id="scroll-top"
+      type="button"
+      aria-label="Scroll to top"
+      class="fixed bottom-6 right-6 z-40 rounded-full border border-border bg-surface p-2 opacity-0 shadow-sm transition-opacity hover:bg-bg-subtle"
+      style="color: var(--color-text-muted); pointer-events: none;"
+    >
+      <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5M5 12l7-7 7 7"/></svg>
+    </button>
+    <script>
+      const scrollBtn = document.getElementById('scroll-top');
+      function onScroll() {
+        if (!scrollBtn) return;
+        const show = window.scrollY > window.innerHeight * 0.5;
+        scrollBtn.style.opacity = show ? '1' : '0';
+        scrollBtn.style.pointerEvents = show ? 'auto' : 'none';
+      }
+      scrollBtn?.addEventListener('click', () => {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      });
+      window.addEventListener('scroll', onScroll, { passive: true });
+      onScroll();
+    </script>
+  </body>
+</html>
