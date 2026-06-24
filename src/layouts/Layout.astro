@@ -1,15 +1,14 @@
 ---
 import { SITE } from '@/config';
 import { getImagePath } from 'astro-takumi';
-import { readFileSync } from 'node:fs';
 import '../styles/global.css';
-// Read KaTeX CSS at build time so we can inline it only on pages that
-// actually render math. Inlined (rather than <link>) to keep it a single
-// self-contained file with no extra request; ~23KB, gzip ~6KB.
-// CWD-relative is correct here: Astro always runs the build from the
-// project root, and import.meta.url is unreliable during prerender (it
-// points at a copied chunk path, not the source).
-const katexCss = readFileSync('node_modules/katex/dist/katex.min.css', 'utf8');
+// Inline the KaTeX stylesheet so it ships as a single self-contained file
+// with no extra request, but only on pages that actually render math
+// (~23KB, gzip ~6KB). Imported with Vite's `?raw` so the CSS is read at
+// bundle time, NOT via node:fs at render time — the latter breaks on
+// build environments that prerender inside workerd/miniflare (e.g.
+// Cloudflare Pages), which have no Node `fs`.
+import katexCss from 'katex/dist/katex.min.css?raw';
 
 interface Props {
   title?: string;
