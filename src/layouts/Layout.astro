@@ -1,6 +1,6 @@
 ---
 import { SITE } from '@/config';
-import { getImagePath } from 'astro-takumi';
+import { getOgImagePath } from '@/lib/og-path';
 import '../styles/global.css';
 // Inline the KaTeX stylesheet so it ships as a single self-contained file
 // with no extra request, but only on pages that actually render math
@@ -30,7 +30,7 @@ const canonical = new URL(canonicalURL ?? Astro.url.pathname, Astro.site ?? SITE
 // OG image is generated per-page at build time by astro-takumi. Format must
 // match the integration config (webp here).
 const ogImage = new URL(
-  getImagePath({ url: Astro.url, site: Astro.site ?? new URL(SITE.website), format: 'webp' }),
+  getOgImagePath({ url: Astro.url, site: Astro.site ?? new URL(SITE.website), format: 'webp' }),
   Astro.site ?? SITE.website,
 );
 // Pre-serialize JSON-LD once; emitted via set:html to avoid double-escaping.

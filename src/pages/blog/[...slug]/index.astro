@@ -9,7 +9,7 @@ import { getPublishedPosts, getReadingTime, getPostURL, getSlug } from '@/lib/po
 import { getSeriesPosts } from '@/lib/series';
 import { hasMath } from '@/lib/math';
 import { SITE } from '@/config';
-import { getImagePath } from 'astro-takumi';
+import { getOgImagePath } from '@/lib/og-path';
 
 export async function getStaticPaths() {
   const posts = await getPublishedPosts();
@@ -48,7 +48,7 @@ const coverIsAsset = cover != null && typeof cover !== 'string';
 // BlogPosting structured data for rich results. astro-takumi generates an OG
 // image at a predictable path per page; reference it here too.
 const ogImageURL = new URL(
-  getImagePath({ url: Astro.url, site: Astro.site ?? new URL(SITE.website), format: 'webp' }),
+  getOgImagePath({ url: Astro.url, site: Astro.site ?? new URL(SITE.website), format: 'webp' }),
   Astro.site ?? SITE.website,
 );
 const jsonLd = {
