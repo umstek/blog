@@ -3,16 +3,15 @@
  * Discussions on the GitHub repo and pick an "Announcements" (or similar)
  * category. Until these are filled in, the Comments component renders nothing.
  *
- * Steps to populate:
- *   1. Enable Discussions on github.com/umstek/blog (Settings → Features).
- *   2. Visit https://giscus.app, enter umstek/blog, choose a category.
- *   3. Copy the data-repo-id and data-category values here.
+ * Populated from https://giscus.app. Mapping is `pathname` so threads are
+ * keyed by URL path (e.g. /posts/foo/) and survive the domain cutover from
+ * umstek.github.io to blog.umstek.com intact.
  */
 export const GISCUS_CONFIG = {
   repo: 'umstek/blog',
-  repoId: '', // TODO: fill from giscus.app
-  category: 'Announcements',
-  categoryId: '', // TODO: fill from giscus.app
+  repoId: 'R_kgDOTDHIqg',
+  category: 'Comments',
+  categoryId: 'DIC_kwDOTDHIqs4C_0ev',
   /** Use the pathname as the discussion mapping for stable per-post threads. */
   mapping: 'pathname' as const,
   reactionsEnabled: true,
