@@ -62,5 +62,21 @@ export default defineConfig({
 
   vite: {
     plugins: [tailwindcss()],
+    resolve: {
+      // @takumi-rs/core (the native engine under astro-takumi) routes the
+      // `workerd` condition to a `not-available.js` stub in its `exports`
+      // map. Cloudflare Pages' build image sets the `workerd` condition, so
+      // Vite selects the stub and the build fails with
+      // '"Renderer" is not exported by not-available.js'. Locally there is no
+      // `workerd` condition, so the real `import` entry is used and it works.
+      // Pin the package to its real ESM entry by absolute path: file-path
+      // imports skip the `exports` map entirely, so the condition routing
+      // never comes into play. The linux native binary installs fine on CF.
+      alias: {
+        '@takumi-rs/core': fileURLToPath(
+          new URL('node_modules/@takumi-rs/core/dist/export.mjs', import.meta.url),
+        ),
+      },
+    },
   },
 });
