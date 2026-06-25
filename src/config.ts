@@ -16,7 +16,7 @@ export const SITE = {
   dir: 'ltr' as const,
   /** Posts shown on the homepage index. */
   postPerIndex: 4,
-  /** Posts per paginated page on /blog. */
+  /** Posts per paginated page on /posts. */
   postPerPage: 8,
   /** Let scheduled posts go live this many ms before their pubDatetime. */
   scheduledPostMargin: 15 * 60 * 1000,

@@ -38,10 +38,12 @@ export function getSlug(post: Post): string {
 }
 
 /**
- * The post's URL path.
+ * The post's URL path. Posts live at the site root on this (sub)domain —
+ * e.g. https://blog.umstek.com/hello-world — because the whole site is the
+ * blog, so a /blog/ prefix would double up as blog.umstek.com/blog/....
  */
 export function getPostURL(post: Post): string {
-  return `/blog/${getSlug(post)}`;
+  return `/${getSlug(post)}`;
 }
 
 /**
