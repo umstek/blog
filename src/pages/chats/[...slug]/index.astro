@@ -1,0 +1,72 @@
+---
+import { type CollectionEntry, render } from 'astro:content';
+import Layout from '@/layouts/Layout.astro';
+import FormattedDate from '@/components/FormattedDate.astro';
+import Comments from '@/components/Comments.astro';
+import ChatRoster from '@/components/ChatRoster.astro';
+import { getPublishedChats, getReadingTime, getSlug } from '@/lib/chats';
+import { setChatRoster } from '@/lib/chat-roster';
+import { hasMath } from '@/lib/math';
+
+export async function getStaticPaths() {
+  const chats = await getPublishedChats();
+  return chats.map((chat) => ({
+    params: { slug: getSlug(chat) },
+    props: { chat },
+  }));
+}
+
+interface Props {
+  chat: CollectionEntry<'chats'>;
+}
+
+const { chat } = Astro.props;
+// Publish the roster before rendering <Content/> so the <Turn> components in
+// the MDX body can resolve speaker keys to { name, role }. See chat-roster.ts.
+const roster = chat.data.participants;
+setChatRoster(roster);
+const { Content } = await render(chat);
+const minutes = getReadingTime(chat.body ?? '');
+
+const description = chat.data.description;
+// Only load KaTeX CSS when the chat body actually contains math syntax.
+const chatHasMath = hasMath(chat.body ?? '');
+---
+
+<Layout title={chat.data.title} description={description} math={chatHasMath}>
+  <article class="space-y-10" data-pagefind-body>
+    <header class="space-y-4">
+      <h1 class="text-4xl font-bold leading-tight tracking-tight md:text-5xl">{chat.data.title}</h1>
+      <div class="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm" style="color: var(--color-text-muted)">
+        <FormattedDate date={chat.data.pubDatetime} />
+        <span aria-hidden="true">·</span>
+        <span>{minutes} min read</span>
+        {chat.data.modDatetime && (
+          <>
+            <span aria-hidden="true">·</span>
+            <span>updated <FormattedDate date={chat.data.modDatetime} /></span>
+          </>
+        )}
+      </div>
+      <div class="flex flex-wrap gap-2">
+        {chat.data.tags.map((tag) => (
+          <a
+            href={`/tags/${tag}`}
+            class="rounded-full border border-border px-2.5 py-0.5 text-xs no-underline hover:bg-bg-subtle"
+            style="color: var(--color-text-muted)"
+          >
+            #{tag}
+          </a>
+        ))}
+      </div>
+    </header>
+
+    <ChatRoster participants={roster} />
+
+    <div class="prose">
+      <Content />
+    </div>
+  </article>
+
+  <Comments />
+</Layout>

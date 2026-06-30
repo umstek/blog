@@ -1,0 +1,51 @@
+---
+import Layout from '@/layouts/Layout.astro';
+import FormattedDate from '@/components/FormattedDate.astro';
+import { getPublishedChats, getChatURL, getReadingTime } from '@/lib/chats';
+
+const chats = await getPublishedChats();
+---
+
+<Layout title="All Chats">
+  <section class="space-y-8">
+    <header>
+      <h1 class="text-3xl font-bold tracking-tight">Chats</h1>
+      <p class="mt-2" style="color: var(--color-text-muted)">
+        Conversations with various AIs.
+        {chats.length > 0 && (
+          <>
+            {chats.length} {chats.length === 1 ? 'chat' : 'chats'}
+          </>
+        )}
+      </p>
+    </header>
+
+    {chats.length === 0 ? (
+      <p class="text-sm" style="color: var(--color-text-muted)">No chats published yet.</p>
+    ) : (
+      <ul class="space-y-8">
+        {chats.map((chat) => {
+          const url = getChatURL(chat);
+          const minutes = getReadingTime(chat.body ?? '');
+          return (
+            <li class="space-y-2">
+              <h2 class="text-xl font-semibold leading-snug">
+                <a href={url} class="no-underline hover:underline" style="color: var(--color-text)">
+                  {chat.data.title}
+                </a>
+              </h2>
+              <div class="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm" style="color: var(--color-text-muted)">
+                <FormattedDate date={chat.data.pubDatetime} />
+                <span aria-hidden="true">·</span>
+                <span>{minutes} min read</span>
+              </div>
+              <p class="line-clamp-2" style="color: var(--color-text-muted)">
+                {chat.data.description}
+              </p>
+            </li>
+          );
+        })}
+      </ul>
+    )}
+  </section>
+</Layout>

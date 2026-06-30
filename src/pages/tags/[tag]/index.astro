@@ -1,24 +1,24 @@
 ---
 import Layout from '@/layouts/Layout.astro';
-import PostCard from '@/components/PostCard.astro';
-import { getPublishedPosts } from '@/lib/posts';
+import FeedCard from '@/components/FeedCard.astro';
+import { getFeed } from '@/lib/feed';
 import { getUniqueTags, getPostsByTag } from '@/lib/tags';
 
 export async function getStaticPaths() {
-  const posts = await getPublishedPosts();
-  const tags = getUniqueTags(posts);
+  const feed = await getFeed();
+  const tags = getUniqueTags(feed);
   return tags.map(({ tag }) => ({
     params: { tag },
-    props: { tag, posts: getPostsByTag(posts, tag) },
+    props: { tag, items: getPostsByTag(feed, tag) },
   }));
 }
 
 interface Props {
   tag: string;
-  posts: Awaited<ReturnType<typeof getPublishedPosts>>;
+  items: Awaited<ReturnType<typeof getFeed>>;
 }
 
-const { tag, posts } = Astro.props;
+const { tag, items } = Astro.props;
 ---
 
 <Layout title={`#${tag}`}>
@@ -26,11 +26,11 @@ const { tag, posts } = Astro.props;
     <header>
       <h1 class="text-3xl font-bold tracking-tight">#{tag}</h1>
       <p class="mt-2" style="color: var(--color-text-muted)">
-        {posts.length} {posts.length === 1 ? 'post' : 'posts'}
+        {items.length} {items.length === 1 ? 'item' : 'items'}
       </p>
     </header>
     <div class="space-y-8">
-      {posts.map((post) => <PostCard post={post} />)}
+      {items.map((item) => <FeedCard item={item} />)}
     </div>
   </section>
 </Layout>

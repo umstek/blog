@@ -1,0 +1,3 @@
+# Chats collection — Markdown/MDX go in src/content/chats/<slug>/index.{md,mdx}.
+# This placeholder keeps the empty directory tracked so the collection's
+# glob base resolves; delete it once the first chat is added.

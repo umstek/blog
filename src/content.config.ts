@@ -41,4 +41,36 @@ const blog = defineCollection({
     }),
 });
 
-export const collections = { blog };
+// Content collection for AI chats published as posts. Markdown/MDX in
+// src/content/chats/<slug>/index.{md,mdx}. Slugs resolve to /chats/<slug>.
+// Schema is the common publishable shape; conversation-specific fields
+// (participants, turns, source) can be added when the first chat lands.
+const chats = defineCollection({
+  loader: glob({ pattern: '**/[^_]*.{md,mdx}', base: './src/content/chats' }),
+  schema: z.object({
+    title: z.string(),
+    description: z.string(),
+    pubDatetime: z.coerce.date(),
+    modDatetime: z.coerce.date().optional().nullable(),
+    draftDatetime: z.coerce.date().optional().nullable(),
+    draft: z.boolean().optional().default(false),
+    featured: z.boolean().optional().default(false),
+    tags: z.array(z.string()).default(['others']),
+    // Roster of conversation participants. Keys are referenced by the
+    // <Turn speaker="key"> component inside the .mdx body; the page resolves
+    // the key to { name, role } here so names live in one place. role drives
+    // bubble styling (user = accent-tinted, assistant = subtle fill).
+    participants: z
+      .record(
+        z.string(),
+        z.object({
+          name: z.string(),
+          role: z.enum(['user', 'assistant', 'system']).default('assistant'),
+        }),
+      )
+      .default({}),
+    author: z.string().default(SITE.author),
+  }),
+});
+
+export const collections = { blog, chats };

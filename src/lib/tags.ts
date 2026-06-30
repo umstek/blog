@@ -1,15 +1,23 @@
-import type { Post } from '@/lib/posts';
+/**
+ * Structural shape an entry needs to participate in tagging. Matches the
+ * flat FeedItem shape (tags at the top level) used by the cross-collection
+ * feed. Satisfied by posts and chats via getFeed().
+ */
+export interface Taggable {
+  id: string;
+  tags: string[];
+}
 
 export interface TagCount {
   tag: string;
   count: number;
 }
 
-/** Unique tags across published posts, with how many posts use each. */
-export function getUniqueTags(posts: Post[]): TagCount[] {
+/** Unique tags across the given entries, with how many use each. */
+export function getUniqueTags<T extends Taggable>(entries: T[]): TagCount[] {
   const counts = new Map<string, number>();
-  for (const post of posts) {
-    for (const tag of post.data.tags) {
+  for (const entry of entries) {
+    for (const tag of entry.tags) {
       counts.set(tag, (counts.get(tag) ?? 0) + 1);
     }
   }
@@ -18,7 +26,7 @@ export function getUniqueTags(posts: Post[]): TagCount[] {
     .sort((a, b) => b.count - a.count || a.tag.localeCompare(b.tag));
 }
 
-/** Posts sharing a given tag, newest first (assumes input already sorted). */
-export function getPostsByTag(posts: Post[], tag: string): Post[] {
-  return posts.filter((p) => p.data.tags.includes(tag));
+/** Entries sharing a given tag. Assumes input is already sorted as desired. */
+export function getPostsByTag<T extends Taggable>(entries: T[], tag: string): T[] {
+  return entries.filter((p) => p.tags.includes(tag));
 }
