@@ -1,0 +1,51 @@
+---
+import type { FeedItem } from '@/lib/feed';
+import { getFeedItemURL } from '@/lib/feed';
+import { getReadingTime } from '@/lib/content';
+import FormattedDate from './FormattedDate.astro';
+
+interface Props {
+  item: FeedItem;
+}
+
+const { item } = Astro.props;
+const url = getFeedItemURL(item);
+const minutes = getReadingTime(item.body ?? '');
+// Chat items get a small "Chat" badge so they're distinguishable in mixed
+// tag listings; posts render without it.
+---
+
+<article class="group space-y-2">
+  <h2 class="text-xl font-semibold leading-snug">
+    {item.kind === 'chat' && (
+      <span
+        class="mr-2 rounded-sm border border-border px-1.5 py-0.5 align-middle text-[0.65em] font-semibold uppercase tracking-wide"
+        style="color: var(--color-text-muted)"
+      >
+        Chat
+      </span>
+    )}
+    <a href={url} class="no-underline hover:underline" style="color: var(--color-text)">
+      {item.title}
+    </a>
+  </h2>
+  <div class="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm" style="color: var(--color-text-muted)">
+    <FormattedDate date={item.pubDatetime} />
+    <span aria-hidden="true">·</span>
+    <span>{minutes} min read</span>
+  </div>
+  <p class="line-clamp-2" style="color: var(--color-text-muted)">
+    {item.description}
+  </p>
+  <div class="flex flex-wrap gap-2 pt-1">
+    {item.tags.map((tag) => (
+      <a
+        href={`/tags/${tag}`}
+        class="rounded-full border border-border px-2.5 py-0.5 text-xs no-underline hover:bg-bg-subtle"
+        style="color: var(--color-text-muted)"
+      >
+        #{tag}
+      </a>
+    ))}
+  </div>
+</article>
