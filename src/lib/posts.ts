@@ -1,56 +1,37 @@
-import { getCollection, type CollectionEntry } from 'astro:content';
-import { SITE } from '@/config';
+import { type CollectionEntry, getCollection } from 'astro:content';
+import { byNewestFirst, isPublished, getSlug as getSlugGeneric, getReadingTime } from '@/lib/content';
 
 export type Post = CollectionEntry<'blog'>;
 
 /**
- * Posts visible to readers: not drafts, and whose publish datetime has
- * passed (with a small margin so a post "scheduled" for a near-future
- * time still renders immediately after build).
- */
-export function isPublished(post: Post, now: Date = new Date()): boolean {
-  if (post.data.draft) return false;
-  const publishedAt = post.data.pubDatetime.getTime();
-  return publishedAt <= now.getTime() + SITE.scheduledPostMargin;
-}
-
-/**
- * All reader-visible posts, newest first. Ties (same publish instant)
- * fall back to slug order for stable output across builds.
+ * All reader-visible posts, newest first. Ties (same publish instant) fall
+ * back to slug order for stable output across builds.
  */
 export async function getPublishedPosts(now: Date = new Date()): Promise<Post[]> {
   const posts = (await getCollection('blog')).filter((p) => isPublished(p, now));
   return posts.sort(byNewestFirst);
 }
 
-export function byNewestFirst(a: Post, b: Post): number {
-  const dt = b.data.pubDatetime.getTime() - a.data.pubDatetime.getTime();
-  return dt !== 0 ? dt : a.id.localeCompare(b.id);
-}
-
 /**
  * The post's slug. Astro's glob loader gives us `id` as the path relative to
  * the collection base, e.g. "hello-world/index" — strip the trailing
  * "/index" so the slug is just the directory name.
+ *
+ * Re-exported from the shared content helpers for callers that still import
+ * it from @/lib/posts.
  */
-export function getSlug(post: Post): string {
-  return post.id.replace(/\/index$/, '');
-}
+export const getSlug = getSlugGeneric<Post>;
 
 /**
- * The post's URL path. Posts live at the site root on this (sub)domain —
- * e.g. https://blog.umstek.com/hello-world — because the whole site is the
- * blog, so a /blog/ prefix would double up as blog.umstek.com/blog/....
+ * The post's URL path. Posts live under /posts/<slug>, e.g.
+ * https://blog.umstek.com/posts/hello-world. The listing of all posts is at
+ * /posts (served by the static src/pages/posts/index.astro); individual posts
+ * are served by the dynamic src/pages/posts/[...slug]/index.astro, which
+ * Astro routes after the static index so the two coexist cleanly.
  */
 export function getPostURL(post: Post): string {
-  return `/${getSlug(post)}`;
+  return `/posts/${getSlug(post)}`;
 }
 
-/**
- * Estimate reading time from raw markdown body. ~200 wpm is a common
- * conservative default for technical prose.
- */
-export function getReadingTime(body: string, wpm = 200): number {
-  const words = body.trim().split(/\s+/).filter(Boolean).length;
-  return Math.max(1, Math.round(words / wpm));
-}
+// Re-exported for existing import sites that pull reading time from @/lib/posts.
+export { getReadingTime };
