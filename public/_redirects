@@ -1,0 +1,4 @@
+# @astrojs/sitemap emits sitemap-index.xml (no rename option). Alias the
+# conventional /sitemap.xml URL to it so crawlers and humans get the XML,
+# not the SPA-fallback index.html.
+/sitemap.xml /sitemap-index.xml 301
