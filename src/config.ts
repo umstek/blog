@@ -22,6 +22,8 @@ export const SITE = {
   postPerPage: 8,
   /** Let scheduled posts go live this many ms before their pubDatetime. */
   scheduledPostMargin: 15 * 60 * 1000,
+  /** Google Analytics 4 Measurement ID (G-…). Empty = analytics disabled. */
+  gaMeasurementId: 'G-C6403FW9JR',
 } as const;
 
 /**
