@@ -9,6 +9,8 @@ export const SITE = {
   author: 'Wickramaranga',
   /** Short site title shown in headers, browser tabs, etc. */
   title: 'UMSTeK Blog',
+  /** Tagline shown under the site title on the homepage. */
+  tagline: 'Taking things apart to see how they work.',
   /** Site description used in meta tags, RSS, and the homepage. */
   desc: 'Personal blog of Wickramaranga (UMSTeK) — programming, tech, and more.',
   /** HTML lang and text direction. */
