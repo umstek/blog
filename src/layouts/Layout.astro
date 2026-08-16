@@ -35,6 +35,10 @@ const ogImage = new URL(
 );
 // Pre-serialize JSON-LD once; emitted via set:html to avoid double-escaping.
 const jsonLdString = jsonLd ? JSON.stringify(jsonLd) : undefined;
+
+// GA4 Measurement ID, if configured. Loaded only in production builds so
+// dev traffic doesn't pollute stats.
+const gaId = SITE.gaMeasurementId || undefined;
 ---
 
 <!doctype html>
@@ -78,6 +82,21 @@ const jsonLdString = jsonLd ? JSON.stringify(jsonLd) : undefined;
       title={SITE.title}
       href={new URL('rss.xml', Astro.site ?? SITE.website)}
     />
+
+    <!-- Google Analytics 4 (gtag.js). is:inline keeps Astro from bundling
+         the snippet; define:vars is how frontmatter values reach an inline
+         script body. -->
+    {gaId && import.meta.env.PROD && (
+      <Fragment>
+        <script is:inline async src={`https://www.googletagmanager.com/gtag/js?id=${gaId}`} />
+        <script is:inline define:vars={{ gaId }}>
+          window.dataLayer = window.dataLayer || [];
+          function gtag() { dataLayer.push(arguments); }
+          gtag('js', new Date());
+          gtag('config', gaId);
+        </script>
+      </Fragment>
+    )}
 
     <!--
       No-flash script. Runs synchronously in <head> before first paint to
