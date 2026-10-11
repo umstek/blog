@@ -25,8 +25,8 @@
  * Each font mode carries its own visual THEME: a palette (and, below, a
  * handful of theme-scoped component rules). The default/neutral theme
  * remains as a fallback; the per-font themes are serif → elegant,
- * sans → professional, mono → neutral for now, dyslexic → neutral for
- * now. Themes never touch the font stacks — those are swapped by
+ * sans → professional, mono → neutral for now, dyslexic → fun.
+ * Themes never touch the font stacks — those are swapped by
  * data-font alone — so fonts and themes stay independently switchable.
  */
 
@@ -128,6 +128,36 @@ html[data-font="sans"][data-theme="dark"] {
   --color-text-muted: #94a3b8;
   --color-accent: #60a5fa;
   --color-accent-contrast: #0f172a;
+}
+
+/* ---- Fun theme (dyslexic mode): light --------------------------------
+   Warm, friendly, and tuned to common dyslexia readability guidance:
+   soft cream instead of glare-white, warm brown instead of pure black
+   (high contrast without harshness), and a teal accent — sidestepping
+   the red/green axis many dyslexic readers also find hard to split. */
+html[data-font="dyslexic"] {
+  --color-bg: #fdf1e0;
+  --color-bg-subtle: #f7e6c8;
+  --color-surface: #faf0dd;
+  --color-border: #ecd9b8;
+  --color-text: #46362a;
+  --color-text-muted: #7a5f49;
+  --color-accent: #0c6b62;
+  --color-accent-contrast: #fdf1e0;
+}
+
+/* ---- Fun theme (dyslexic mode): dark ---------------------------------
+   Cozy plum-and-coral evening variant; cream text keeps contrast high
+   without ever hitting pure white. */
+html[data-font="dyslexic"][data-theme="dark"] {
+  --color-bg: #2b2138;
+  --color-bg-subtle: #3a2d4d;
+  --color-surface: #3a2d4d;
+  --color-border: #4d3d63;
+  --color-text: #f6ecd9;
+  --color-text-muted: #c4b0d6;
+  --color-accent: #ff8a5c;
+  --color-accent-contrast: #2b2138;
 }
 
 /*
@@ -437,4 +467,29 @@ html[data-font="sans"] h5,
 html[data-font="sans"] h6 {
   font-weight: 600;
   letter-spacing: -0.02em;
+}
+
+/* ---- Fun (dyslexic) theme component styling --------------------------
+   Readability first: extra leading on body and prose — a standard
+   dyslexia accommodation — and candy-tinted tag chips. No uppercase
+   transforms here on purpose: all-caps destroys the word shapes the
+   OpenDyslexic face works to preserve. The base headings' -0.01em
+   tracking is cancelled too, for the same reason. */
+html[data-font="dyslexic"] body {
+  line-height: 1.85;
+}
+html[data-font="dyslexic"] .prose {
+  line-height: 1.9;
+}
+html[data-font="dyslexic"] h1,
+html[data-font="dyslexic"] h2,
+html[data-font="dyslexic"] h3,
+html[data-font="dyslexic"] h4,
+html[data-font="dyslexic"] h5,
+html[data-font="dyslexic"] h6 {
+  letter-spacing: 0;
+}
+html[data-font="dyslexic"] .tag {
+  background-color: var(--color-bg-subtle);
+  color: var(--color-accent);
 }

@@ -14,8 +14,7 @@ const tags = getUniqueTags(feed);
       {tags.map(({ tag, count }) => (
         <a
           href={`/tags/${tag}`}
-          class="tag rounded-full border border-border px-3 py-1 text-sm no-underline hover:bg-bg-subtle"
-          style="color: var(--color-text-muted)"
+          class="tag rounded-full border border-border px-3 py-1 text-sm text-text-muted no-underline hover:bg-bg-subtle"
         >
           #{tag} <span class="opacity-60">({count})</span>
         </a>
