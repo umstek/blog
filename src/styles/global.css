@@ -16,9 +16,22 @@
  * Design tokens. Defined as native CSS custom properties so the theme
  * toggles by swapping a data-attribute on <html> without re-rendering.
  * Tailwind v4 consumes these via @theme inline below.
+ *
+ * Two independent switches live on <html>:
+ *   - data-theme="light" | "dark"  — set by the no-flash script in <head>
+ *     ("system" is resolved to light/dark before paint).
+ *   - data-font="serif" | "sans" | "mono" | "dyslexic".
+ *
+ * Each font mode carries its own visual THEME: a palette (and, below, a
+ * handful of theme-scoped component rules). The default/neutral theme
+ * serves sans, mono, and dyslexic until they get themes of their own;
+ * serif gets the "elegant" theme. Themes never touch the font stacks —
+ * those are swapped by data-font alone — so fonts and themes stay
+ * independently switchable.
  */
+
+/* ---- Default (neutral) theme: light ------------------------------- */
 :root {
-  /* Light theme (default) */
   --color-bg: #ffffff;
   --color-bg-subtle: #f6f6f7;
   --color-surface: #ffffff;
@@ -42,6 +55,52 @@
 
   /* Fluid body type. */
   --text-body: clamp(1.0625rem, 1rem + 0.2vw, 1.1875rem);
+}
+
+/* ---- Default (neutral) theme: dark --------------------------------- */
+[data-theme="dark"] {
+  --color-bg: #0f0f10;
+  --color-bg-subtle: #18181b;
+  --color-surface: #18181b;
+  --color-border: #2a2a2e;
+  --color-text: #e8e8ea;
+  --color-text-muted: #9a9aa2;
+  --color-accent: #fb923c;
+  --color-accent-contrast: #1c1c1e;
+}
+
+/* ---- Elegant theme (serif mode): light ------------------------------
+   Warm paper, ink, and navy — the palette of a printed pamphlet. Lifted
+   from the "Practice Notes" Open Design artifact: paper #f5f4ed, ink
+   #1f1d18, hairline rules #d4d1c5, ink-blue accent #1B365D. */
+html[data-font="serif"] {
+  --color-bg: #f5f4ed;
+  --color-bg-subtle: #eeede3;
+  --color-surface: #f0efe6;
+  --color-border: #d4d1c5;
+  --color-text: #1f1d18;
+  --color-text-muted: #6b665b;
+  --color-accent: #1b365d;
+  --color-accent-contrast: #f5f4ed;
+
+  /* A hair narrower than the neutral measure: Merriweather runs wide and
+     book-like columns sit around 65 characters. */
+  --measure: 66ch;
+}
+
+/* ---- Elegant theme (serif mode): dark -------------------------------
+   Institutional navy, bone, and gold — the palette of the "Signal"
+   strategy-memo deck: bg #1c2644, bone text #e2dcd0, surface #232f55,
+   hairline #2e3d5c, gold accent #c8a870. */
+html[data-font="serif"][data-theme="dark"] {
+  --color-bg: #1c2644;
+  --color-bg-subtle: #232f55;
+  --color-surface: #232f55;
+  --color-border: #2e3d5c;
+  --color-text: #e2dcd0;
+  --color-text-muted: #8a96a8;
+  --color-accent: #c8a870;
+  --color-accent-contrast: #1c2644;
 }
 
 /*
@@ -256,4 +315,86 @@ a:hover {
 }
 .prose :where(a:hover) {
   text-decoration-thickness: 2px;
+}
+
+/*
+ * Theme-scoped component styling.
+ *
+ * Components carry a few semantic hooks that themes restyle:
+ *   .meta   — metadata rows (date · reading time)
+ *   .tag    — tag chips
+ *   .cover  — post cover imagery
+ *   .panel  — boxed secondary surfaces (series nav, chat roster)
+ *   .nav-link — header navigation links
+ *
+ * The neutral theme adds nothing here (components keep their Tailwind
+ * utilities). Each font theme may restyle the hooks; these rules are
+ * unlayered, so they intentionally win over utility classes — keep the
+ * selectors narrow and theme-prefixed.
+ */
+
+/* ---- Elegant (serif) theme component styling ------------------------
+   The print-pamphlet vocabulary from the Open Design artifacts: serif
+   headings at display weight, monospace uppercase micro-labels with wide
+   tracking for chrome and metadata, hairline rules, squared corners, and
+   accent-colored italics for emphasis. */
+
+/* Headings: display weight rather than bold, deck-like tracking. */
+html[data-font="serif"] h1,
+html[data-font="serif"] h2,
+html[data-font="serif"] h3,
+html[data-font="serif"] h4,
+html[data-font="serif"] h5,
+html[data-font="serif"] h6 {
+  font-weight: 600;
+  letter-spacing: -0.015em;
+}
+
+/* Metadata rows become monospace micro-labels, like the decks' folios. */
+html[data-font="serif"] .meta {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+/* Tag chips: squared monospace labels instead of rounded pills. */
+html[data-font="serif"] .tag {
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  border-radius: 0;
+  padding: 0.25rem 0.55rem;
+}
+
+/* Header nav links as running-chrome micro-labels. */
+html[data-font="serif"] .nav-link {
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+/* Squared corners on imagery and boxed panels — print, not app. */
+html[data-font="serif"] .cover,
+html[data-font="serif"] .panel,
+html[data-font="serif"] .prose :where(img),
+html[data-font="serif"] .prose :where(pre) {
+  border-radius: 0;
+}
+
+html[data-font="serif"] .prose :where(:not(pre) > code) {
+  border-radius: 0;
+}
+
+/* Blockquotes: accent-ruled, ink-colored — the decks' pull-quote style. */
+html[data-font="serif"] .prose :where(blockquote) {
+  border-left: 2px solid var(--color-accent);
+  color: var(--color-text);
+}
+
+/* Emphasis inside headings picks up the accent, as on the deck covers. */
+html[data-font="serif"] .prose :where(h1, h2, h3, h4, h5, h6) em {
+  color: var(--color-accent);
 }
