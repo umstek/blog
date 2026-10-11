@@ -25,7 +25,7 @@
  * Each font mode carries its own visual THEME: a palette (and, below, a
  * handful of theme-scoped component rules). The default/neutral theme
  * remains as a fallback; the per-font themes are serif → elegant,
- * sans → professional, mono → neutral for now, dyslexic → fun.
+ * sans → professional, mono → terminal, dyslexic → fun.
  * Themes never touch the font stacks — those are swapped by
  * data-font alone — so fonts and themes stay independently switchable.
  */
@@ -158,6 +158,34 @@ html[data-font="dyslexic"][data-theme="dark"] {
   --color-text-muted: #c4b0d6;
   --color-accent: #ff8a5c;
   --color-accent-contrast: #2b2138;
+}
+
+/* ---- Terminal theme (mono mode): light -------------------------------
+   Engineering-paper brutalism: warm-gray pad, near-black ink, hard
+   rules, and a terminal green pushed dark enough for a light ground. */
+html[data-font="mono"] {
+  --color-bg: #f1f0ea;
+  --color-bg-subtle: #e4e3da;
+  --color-surface: #e9e8df;
+  --color-border: #c6c5b9;
+  --color-text: #181812;
+  --color-text-muted: #63625a;
+  --color-accent: #146b36;
+  --color-accent-contrast: #f1f0ea;
+}
+
+/* ---- Terminal theme (mono mode): dark --------------------------------
+   Phosphor terminal: near-black with a green cast, soft green-gray
+   text, and classic CRT green for links and accents. */
+html[data-font="mono"][data-theme="dark"] {
+  --color-bg: #0c0f0c;
+  --color-bg-subtle: #141a14;
+  --color-surface: #141a14;
+  --color-border: #263226;
+  --color-text: #cfd8cc;
+  --color-text-muted: #8a9a86;
+  --color-accent: #4fe07d;
+  --color-accent-contrast: #0c0f0c;
 }
 
 /*
@@ -492,4 +520,48 @@ html[data-font="dyslexic"] h6 {
 html[data-font="dyslexic"] .tag {
   background-color: var(--color-bg-subtle);
   color: var(--color-accent);
+}
+
+/* ---- Terminal (mono) theme component styling -------------------------
+   Brutalist chrome: squared corners, heavy 2px rules on the big
+   surfaces, uppercase terminal labels, and accent-ruled roman (not
+   italic) blockquotes. Headings drop the base negative tracking — it
+   makes monospaced glyphs collide. */
+html[data-font="mono"] h1,
+html[data-font="mono"] h2,
+html[data-font="mono"] h3,
+html[data-font="mono"] h4,
+html[data-font="mono"] h5,
+html[data-font="mono"] h6 {
+  letter-spacing: 0;
+}
+
+html[data-font="mono"] .meta,
+html[data-font="mono"] .nav-link {
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+}
+
+html[data-font="mono"] .tag {
+  border-radius: 0;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+
+html[data-font="mono"] .cover,
+html[data-font="mono"] .panel,
+html[data-font="mono"] .prose :where(img),
+html[data-font="mono"] .prose :where(pre) {
+  border-radius: 0;
+  border-width: 2px;
+}
+
+html[data-font="mono"] .prose :where(:not(pre) > code) {
+  border-radius: 0;
+}
+
+html[data-font="mono"] .prose :where(blockquote) {
+  border-left: 3px solid var(--color-accent);
+  font-style: normal;
+  color: var(--color-text);
 }
