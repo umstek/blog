@@ -24,10 +24,10 @@
  *
  * Each font mode carries its own visual THEME: a palette (and, below, a
  * handful of theme-scoped component rules). The default/neutral theme
- * serves sans, mono, and dyslexic until they get themes of their own;
- * serif gets the "elegant" theme. Themes never touch the font stacks —
- * those are swapped by data-font alone — so fonts and themes stay
- * independently switchable.
+ * remains as a fallback; the per-font themes are serif → elegant,
+ * sans → professional, mono → neutral for now, dyslexic → neutral for
+ * now. Themes never touch the font stacks — those are swapped by
+ * data-font alone — so fonts and themes stay independently switchable.
  */
 
 /* ---- Default (neutral) theme: light ------------------------------- */
@@ -101,6 +101,33 @@ html[data-font="serif"][data-theme="dark"] {
   --color-text-muted: #8a96a8;
   --color-accent: #c8a870;
   --color-accent-contrast: #1c2644;
+}
+
+/* ---- Professional theme (sans mode): light --------------------------
+   Crisp, cool, corporate: white page, slate grays, and a confident
+   product-docs blue. No warmth, no decoration — restraint is the look. */
+html[data-font="sans"] {
+  --color-bg: #ffffff;
+  --color-bg-subtle: #f4f6f8;
+  --color-surface: #ffffff;
+  --color-border: #dfe3e8;
+  --color-text: #111827;
+  --color-text-muted: #5b6472;
+  --color-accent: #2563eb;
+  --color-accent-contrast: #ffffff;
+}
+
+/* ---- Professional theme (sans mode): dark ---------------------------
+   Slate-900 dashboard dark with a lifted blue accent. */
+html[data-font="sans"][data-theme="dark"] {
+  --color-bg: #0f172a;
+  --color-bg-subtle: #1e293b;
+  --color-surface: #1e293b;
+  --color-border: #334155;
+  --color-text: #e2e8f0;
+  --color-text-muted: #94a3b8;
+  --color-accent: #60a5fa;
+  --color-accent-contrast: #0f172a;
 }
 
 /*
@@ -397,4 +424,17 @@ html[data-font="serif"] .prose :where(blockquote) {
 /* Emphasis inside headings picks up the accent, as on the deck covers. */
 html[data-font="serif"] .prose :where(h1, h2, h3, h4, h5, h6) em {
   color: var(--color-accent);
+}
+
+/* ---- Professional (sans) theme component styling ---------------------
+   Quiet chrome on purpose: the palette and Inter do the work. Headings
+   get the tight, medium-weight SaaS treatment. */
+html[data-font="sans"] h1,
+html[data-font="sans"] h2,
+html[data-font="sans"] h3,
+html[data-font="sans"] h4,
+html[data-font="sans"] h5,
+html[data-font="sans"] h6 {
+  font-weight: 600;
+  letter-spacing: -0.02em;
 }
