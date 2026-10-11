@@ -118,9 +118,11 @@ const gaId = SITE.gaMeasurementId || undefined;
           el.dataset.theme = resolved;
           el.dataset.themeMode = mode;
 
-          // Font family: stored value, default serif.
-          const font = localStorage.getItem('font');
-          if (font) el.dataset.font = font;
+          // Font family: stored value, default serif. Always set the
+          // attribute so the per-font theme (e.g. serif → elegant) applies
+          // before first paint, not just after hydration.
+          const font = localStorage.getItem('font') || 'serif';
+          el.dataset.font = font;
         } catch {
           /* localStorage may be unavailable (private mode); fall through to
              the CSS defaults rather than crashing the page. */
@@ -139,11 +141,11 @@ const gaId = SITE.gaMeasurementId || undefined;
           {SITE.title}
         </a>
         <div class="flex items-center gap-4 text-sm">
-          <a href="/posts" class="no-underline hover:underline" style="color: var(--color-text-muted)">Posts</a>
-          <a href="/chats" class="no-underline hover:underline" style="color: var(--color-text-muted)">Chats</a>
-          <a href="/tags" class="no-underline hover:underline" style="color: var(--color-text-muted)">Tags</a>
-          <a href="/archives" class="no-underline hover:underline" style="color: var(--color-text-muted)">Archives</a>
-          <a href="/search" class="no-underline hover:underline" style="color: var(--color-text-muted)">Search</a>
+          <a href="/posts" class="nav-link no-underline hover:underline" style="color: var(--color-text-muted)">Posts</a>
+          <a href="/chats" class="nav-link no-underline hover:underline" style="color: var(--color-text-muted)">Chats</a>
+          <a href="/tags" class="nav-link no-underline hover:underline" style="color: var(--color-text-muted)">Tags</a>
+          <a href="/archives" class="nav-link no-underline hover:underline" style="color: var(--color-text-muted)">Archives</a>
+          <a href="/search" class="nav-link no-underline hover:underline" style="color: var(--color-text-muted)">Search</a>
 
           <!-- Theme toggle: 3-state light/dark/system. Three icons stacked;
                the active one scales in, others scale out, via the behavior script. -->

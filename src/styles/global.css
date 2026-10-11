@@ -16,9 +16,22 @@
  * Design tokens. Defined as native CSS custom properties so the theme
  * toggles by swapping a data-attribute on <html> without re-rendering.
  * Tailwind v4 consumes these via @theme inline below.
+ *
+ * Two independent switches live on <html>:
+ *   - data-theme="light" | "dark"  — set by the no-flash script in <head>
+ *     ("system" is resolved to light/dark before paint).
+ *   - data-font="serif" | "sans" | "mono" | "dyslexic".
+ *
+ * Each font mode carries its own visual THEME: a palette (and, below, a
+ * handful of theme-scoped component rules). The default/neutral theme
+ * remains as a fallback; the per-font themes are serif → elegant,
+ * sans → professional, mono → terminal, dyslexic → fun.
+ * Themes never touch the font stacks — those are swapped by
+ * data-font alone — so fonts and themes stay independently switchable.
  */
+
+/* ---- Default (neutral) theme: light ------------------------------- */
 :root {
-  /* Light theme (default) */
   --color-bg: #ffffff;
   --color-bg-subtle: #f6f6f7;
   --color-surface: #ffffff;
@@ -42,6 +55,137 @@
 
   /* Fluid body type. */
   --text-body: clamp(1.0625rem, 1rem + 0.2vw, 1.1875rem);
+}
+
+/* ---- Default (neutral) theme: dark --------------------------------- */
+[data-theme="dark"] {
+  --color-bg: #0f0f10;
+  --color-bg-subtle: #18181b;
+  --color-surface: #18181b;
+  --color-border: #2a2a2e;
+  --color-text: #e8e8ea;
+  --color-text-muted: #9a9aa2;
+  --color-accent: #fb923c;
+  --color-accent-contrast: #1c1c1e;
+}
+
+/* ---- Elegant theme (serif mode): light ------------------------------
+   Warm paper, ink, and navy — the palette of a printed pamphlet. Lifted
+   from the "Practice Notes" Open Design artifact: paper #f5f4ed, ink
+   #1f1d18, hairline rules #d4d1c5, ink-blue accent #1B365D. */
+html[data-font="serif"] {
+  --color-bg: #f5f4ed;
+  --color-bg-subtle: #eeede3;
+  --color-surface: #f0efe6;
+  --color-border: #d4d1c5;
+  --color-text: #1f1d18;
+  --color-text-muted: #6b665b;
+  --color-accent: #1b365d;
+  --color-accent-contrast: #f5f4ed;
+
+  /* A hair narrower than the neutral measure: Merriweather runs wide and
+     book-like columns sit around 65 characters. */
+  --measure: 66ch;
+}
+
+/* ---- Elegant theme (serif mode): dark -------------------------------
+   Institutional navy, bone, and gold — the palette of the "Signal"
+   strategy-memo deck: bg #1c2644, bone text #e2dcd0, surface #232f55,
+   hairline #2e3d5c, gold accent #c8a870. */
+html[data-font="serif"][data-theme="dark"] {
+  --color-bg: #1c2644;
+  --color-bg-subtle: #232f55;
+  --color-surface: #232f55;
+  --color-border: #2e3d5c;
+  --color-text: #e2dcd0;
+  --color-text-muted: #8a96a8;
+  --color-accent: #c8a870;
+  --color-accent-contrast: #1c2644;
+}
+
+/* ---- Professional theme (sans mode): light --------------------------
+   Crisp, cool, corporate: white page, slate grays, and a confident
+   product-docs blue. No warmth, no decoration — restraint is the look. */
+html[data-font="sans"] {
+  --color-bg: #ffffff;
+  --color-bg-subtle: #f4f6f8;
+  --color-surface: #ffffff;
+  --color-border: #dfe3e8;
+  --color-text: #111827;
+  --color-text-muted: #5b6472;
+  --color-accent: #2563eb;
+  --color-accent-contrast: #ffffff;
+}
+
+/* ---- Professional theme (sans mode): dark ---------------------------
+   Slate-900 dashboard dark with a lifted blue accent. */
+html[data-font="sans"][data-theme="dark"] {
+  --color-bg: #0f172a;
+  --color-bg-subtle: #1e293b;
+  --color-surface: #1e293b;
+  --color-border: #334155;
+  --color-text: #e2e8f0;
+  --color-text-muted: #94a3b8;
+  --color-accent: #60a5fa;
+  --color-accent-contrast: #0f172a;
+}
+
+/* ---- Fun theme (dyslexic mode): light --------------------------------
+   Warm, friendly, and tuned to common dyslexia readability guidance:
+   soft cream instead of glare-white, warm brown instead of pure black
+   (high contrast without harshness), and a teal accent — sidestepping
+   the red/green axis many dyslexic readers also find hard to split. */
+html[data-font="dyslexic"] {
+  --color-bg: #fdf1e0;
+  --color-bg-subtle: #f7e6c8;
+  --color-surface: #faf0dd;
+  --color-border: #ecd9b8;
+  --color-text: #46362a;
+  --color-text-muted: #7a5f49;
+  --color-accent: #0c6b62;
+  --color-accent-contrast: #fdf1e0;
+}
+
+/* ---- Fun theme (dyslexic mode): dark ---------------------------------
+   Cozy plum-and-coral evening variant; cream text keeps contrast high
+   without ever hitting pure white. */
+html[data-font="dyslexic"][data-theme="dark"] {
+  --color-bg: #2b2138;
+  --color-bg-subtle: #3a2d4d;
+  --color-surface: #3a2d4d;
+  --color-border: #4d3d63;
+  --color-text: #f6ecd9;
+  --color-text-muted: #c4b0d6;
+  --color-accent: #ff8a5c;
+  --color-accent-contrast: #2b2138;
+}
+
+/* ---- Terminal theme (mono mode): light -------------------------------
+   Engineering-paper brutalism: warm-gray pad, near-black ink, hard
+   rules, and a terminal green pushed dark enough for a light ground. */
+html[data-font="mono"] {
+  --color-bg: #f1f0ea;
+  --color-bg-subtle: #e4e3da;
+  --color-surface: #e9e8df;
+  --color-border: #c6c5b9;
+  --color-text: #181812;
+  --color-text-muted: #63625a;
+  --color-accent: #146b36;
+  --color-accent-contrast: #f1f0ea;
+}
+
+/* ---- Terminal theme (mono mode): dark --------------------------------
+   Phosphor terminal: near-black with a green cast, soft green-gray
+   text, and classic CRT green for links and accents. */
+html[data-font="mono"][data-theme="dark"] {
+  --color-bg: #0c0f0c;
+  --color-bg-subtle: #141a14;
+  --color-surface: #141a14;
+  --color-border: #263226;
+  --color-text: #cfd8cc;
+  --color-text-muted: #8a9a86;
+  --color-accent: #4fe07d;
+  --color-accent-contrast: #0c0f0c;
 }
 
 /*
@@ -256,4 +400,168 @@ a:hover {
 }
 .prose :where(a:hover) {
   text-decoration-thickness: 2px;
+}
+
+/*
+ * Theme-scoped component styling.
+ *
+ * Components carry a few semantic hooks that themes restyle:
+ *   .meta   — metadata rows (date · reading time)
+ *   .tag    — tag chips
+ *   .cover  — post cover imagery
+ *   .panel  — boxed secondary surfaces (series nav, chat roster)
+ *   .nav-link — header navigation links
+ *
+ * The neutral theme adds nothing here (components keep their Tailwind
+ * utilities). Each font theme may restyle the hooks; these rules are
+ * unlayered, so they intentionally win over utility classes — keep the
+ * selectors narrow and theme-prefixed.
+ */
+
+/* ---- Elegant (serif) theme component styling ------------------------
+   The print-pamphlet vocabulary from the Open Design artifacts: serif
+   headings at display weight, monospace uppercase micro-labels with wide
+   tracking for chrome and metadata, hairline rules, squared corners, and
+   accent-colored italics for emphasis. */
+
+/* Headings: display weight rather than bold, deck-like tracking. */
+html[data-font="serif"] h1,
+html[data-font="serif"] h2,
+html[data-font="serif"] h3,
+html[data-font="serif"] h4,
+html[data-font="serif"] h5,
+html[data-font="serif"] h6 {
+  font-weight: 600;
+  letter-spacing: -0.015em;
+}
+
+/* Metadata rows become monospace micro-labels, like the decks' folios. */
+html[data-font="serif"] .meta {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+/* Tag chips: squared monospace labels instead of rounded pills. */
+html[data-font="serif"] .tag {
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  border-radius: 0;
+  padding: 0.25rem 0.55rem;
+}
+
+/* Header nav links as running-chrome micro-labels. */
+html[data-font="serif"] .nav-link {
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+/* Squared corners on imagery and boxed panels — print, not app. */
+html[data-font="serif"] .cover,
+html[data-font="serif"] .panel,
+html[data-font="serif"] .prose :where(img),
+html[data-font="serif"] .prose :where(pre) {
+  border-radius: 0;
+}
+
+html[data-font="serif"] .prose :where(:not(pre) > code) {
+  border-radius: 0;
+}
+
+/* Blockquotes: accent-ruled, ink-colored — the decks' pull-quote style. */
+html[data-font="serif"] .prose :where(blockquote) {
+  border-left: 2px solid var(--color-accent);
+  color: var(--color-text);
+}
+
+/* Emphasis inside headings picks up the accent, as on the deck covers. */
+html[data-font="serif"] .prose :where(h1, h2, h3, h4, h5, h6) em {
+  color: var(--color-accent);
+}
+
+/* ---- Professional (sans) theme component styling ---------------------
+   Quiet chrome on purpose: the palette and Inter do the work. Headings
+   get the tight, medium-weight SaaS treatment. */
+html[data-font="sans"] h1,
+html[data-font="sans"] h2,
+html[data-font="sans"] h3,
+html[data-font="sans"] h4,
+html[data-font="sans"] h5,
+html[data-font="sans"] h6 {
+  font-weight: 600;
+  letter-spacing: -0.02em;
+}
+
+/* ---- Fun (dyslexic) theme component styling --------------------------
+   Readability first: extra leading on body and prose — a standard
+   dyslexia accommodation — and candy-tinted tag chips. No uppercase
+   transforms here on purpose: all-caps destroys the word shapes the
+   OpenDyslexic face works to preserve. The base headings' -0.01em
+   tracking is cancelled too, for the same reason. */
+html[data-font="dyslexic"] body {
+  line-height: 1.85;
+}
+html[data-font="dyslexic"] .prose {
+  line-height: 1.9;
+}
+html[data-font="dyslexic"] h1,
+html[data-font="dyslexic"] h2,
+html[data-font="dyslexic"] h3,
+html[data-font="dyslexic"] h4,
+html[data-font="dyslexic"] h5,
+html[data-font="dyslexic"] h6 {
+  letter-spacing: 0;
+}
+html[data-font="dyslexic"] .tag {
+  background-color: var(--color-bg-subtle);
+  color: var(--color-accent);
+}
+
+/* ---- Terminal (mono) theme component styling -------------------------
+   Brutalist chrome: squared corners, heavy 2px rules on the big
+   surfaces, uppercase terminal labels, and accent-ruled roman (not
+   italic) blockquotes. Headings drop the base negative tracking — it
+   makes monospaced glyphs collide. */
+html[data-font="mono"] h1,
+html[data-font="mono"] h2,
+html[data-font="mono"] h3,
+html[data-font="mono"] h4,
+html[data-font="mono"] h5,
+html[data-font="mono"] h6 {
+  letter-spacing: 0;
+}
+
+html[data-font="mono"] .meta,
+html[data-font="mono"] .nav-link {
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+}
+
+html[data-font="mono"] .tag {
+  border-radius: 0;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+
+html[data-font="mono"] .cover,
+html[data-font="mono"] .panel,
+html[data-font="mono"] .prose :where(img),
+html[data-font="mono"] .prose :where(pre) {
+  border-radius: 0;
+  border-width: 2px;
+}
+
+html[data-font="mono"] .prose :where(:not(pre) > code) {
+  border-radius: 0;
+}
+
+html[data-font="mono"] .prose :where(blockquote) {
+  border-left: 3px solid var(--color-accent);
+  font-style: normal;
+  color: var(--color-text);
 }

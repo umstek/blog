@@ -34,7 +34,7 @@ const chats = await getPublishedChats();
                   {chat.data.title}
                 </a>
               </h2>
-              <div class="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm" style="color: var(--color-text-muted)">
+              <div class="meta flex flex-wrap items-center gap-x-3 gap-y-1 text-sm" style="color: var(--color-text-muted)">
                 <FormattedDate date={chat.data.pubDatetime} />
                 <span aria-hidden="true">·</span>
                 <span>{minutes} min read</span>

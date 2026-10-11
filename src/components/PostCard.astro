@@ -24,7 +24,7 @@ const coverIsAsset = cover != null && typeof cover !== 'string';
         alt=""
         width={400}
         height={210}
-        class="rounded-lg border border-border object-cover"
+        class="cover rounded-lg border border-border object-cover"
       />
     </a>
   )}
@@ -33,7 +33,7 @@ const coverIsAsset = cover != null && typeof cover !== 'string';
       {post.data.title}
     </a>
   </h2>
-  <div class="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm" style="color: var(--color-text-muted)">
+  <div class="meta flex flex-wrap items-center gap-x-3 gap-y-1 text-sm" style="color: var(--color-text-muted)">
     <FormattedDate date={post.data.pubDatetime} />
     <span aria-hidden="true">·</span>
     <span>{minutes} min read</span>
@@ -45,8 +45,7 @@ const coverIsAsset = cover != null && typeof cover !== 'string';
     {post.data.tags.map((tag) => (
       <a
         href={`/tags/${tag}`}
-        class="rounded-full border border-border px-2.5 py-0.5 text-xs no-underline hover:bg-bg-subtle"
-        style="color: var(--color-text-muted)"
+        class="tag rounded-full border border-border px-2.5 py-0.5 text-xs text-text-muted no-underline hover:bg-bg-subtle"
       >
         #{tag}
       </a>
