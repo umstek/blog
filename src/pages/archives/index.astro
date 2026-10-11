@@ -29,7 +29,7 @@ const years = [...byYear.keys()].sort((a, b) => b - a);
               <FormattedDate
                 date={post.data.pubDatetime}
                 format="MMM D"
-                class="tabular-nums text-sm"
+                class="meta tabular-nums text-sm"
               />
               <a href={getPostURL(post)} class="no-underline hover:underline" style="color: var(--color-text)">
                 {post.data.title}
